@@ -1,0 +1,9 @@
+opt.c
+opt.html
+*.so
+__pycache__/*
+algo/*.so
+*.pyc
+algo/*.o
+algo/.ipynb_checkpoints
+algo/statistics.hpp.gch

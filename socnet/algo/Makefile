@@ -1,0 +1,35 @@
+MODULE = calculate$(shell python3-config --extension-suffix)
+VERSION = $(shell git describe --tags --always --long --dirty)
+INLCUDES = $(shell python3 -m pybind11 --includes)
+OBS = calculate.o population.o pybindmodule.o
+CC = c++
+CFLAGS = -O3 -Wall -std=c++11 $(INLCUDES) $(COSFLAGS)
+LDFLAGS= $(LOSFLAGS)
+
+ifeq ($(shell uname -s), Darwin)
+	COSFLAGS = #-include-pch statistics.hpp.gch
+    LOSFLAGS = -shared -undefined dynamic_lookup
+else
+	COSFLAGS = -fPIC
+    LOSFLAGS = -shared -fPIC
+endif
+
+all: $(MODULE)
+
+population.o: population.cc population.hpp
+	$(CC) $(CFLAGS) -o $@ -c $< 
+
+calculate.o: calculate.cc population.hpp statistics.hpp
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+pybindmodule.o: pybindmodule.cc calculate.o
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+$(MODULE): $(OBS)
+	$(CC) $(LDFLAGS) -o $@ $(OBS)
+
+test:
+	./test.sh
+
+clean:
+	rm -fr $(MODULE) __pycache__ *.o

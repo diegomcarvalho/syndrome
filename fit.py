@@ -1,0 +1,400 @@
+import itertools
+import math as m
+import os
+
+import lmfit as lm
+import numba
+import numpy as np
+import pandas as pd
+import ray
+from lmfit.models import (BreitWignerModel, DampedOscillatorModel,
+                          GaussianModel, LinearModel, LognormalModel,
+                          LorentzianModel, MoffatModel, Pearson7Model,
+                          PseudoVoigtModel, SkewedGaussianModel,
+                          SkewedVoigtModel, SplitLorentzianModel, StepModel,
+                          StudentsTModel, VoigtModel)
+
+import edocovid as edo
+from htmltemplate import param_page
+from svg import dump_svg, dump_svg2D, dump_svg_ph
+
+
+def dump_xy_dat(filename, x, y):
+	with open(filename, 'w') as f:
+		for i, j in itertools.zip_longest(x, y, fillvalue='nan'):
+			f.write(f'{i}, {j}\n')
+	return
+
+def dump_xyz_dat(filename, x, y, z):
+	with open(filename, 'w') as f:
+		for i, j, k in itertools.zip_longest(x, y, z, fillvalue='nan'):
+			f.write(f'{i}, {j}, {k}\n')
+
+
+def dump_report(filename, result, x, y, forecast_size, fsvg, model, ct, ylabel):
+	rname = ct.replace('_', ' ')
+	table_info = f'<tr><td>Success status</td><td>{result.success}</td></tr>'
+	table_info += f'<tr><td>Abort status</td><td>{result.aborted}</td></tr>'
+	table_info += f'<tr><td>Fit message</td><td>{result.message}</td></tr>'
+	table_stat = '<tr> <td>' + result._repr_html_() + '</td></tr>'
+	table_obs = f'<tr><th>Days from the first infected</th><th>{ylabel}</th><th>Model {ylabel}</th></tr>'
+
+	if result != None:
+		nx = np.arange(x[-1] + 7)
+		try:
+			forecast = model.eval(result.params,x=nx)
+			for i, j, k in itertools.zip_longest(nx, y, forecast, fillvalue='nan'):
+				table_obs += f'<tr><td>{i}</td><td>{j}</td><td>{k:.0f}</td></tr>'
+		except Exception as e:
+			print(f'dump_report: {ct} {model} {e}, generating report without forecast')
+			for i, j in itertools.zip_longest(x, y, fillvalue='nan'):
+				table_obs += f'<tr><td>{i}</td><td>{j}</td><td>{e}</td></tr>'
+
+	with open(filename, 'w') as f:
+		f.write(param_page(rname, table_info, table_stat, table_obs,fsvg))
+	return
+
+def get_edo_config(x, y, cur, tag):
+
+	pop = int(cur['popData2018'].iloc[-1])
+	gammaD = 0.14
+	death_rate = cur['accDeaths'].iloc[-1] / cur['accCases'].iloc[-1]  # 0.035
+	dD = gammaD * death_rate / (1 - death_rate)
+	
+	# D0 = y[0]
+	# E0 = A0 + I0
+	a = 1.2
+	i = 1.8
+
+	params = lm.Parameters()
+	params.add('beta', value=9.33E-08, min=0, max=1E-5)
+
+	params.add('theta', value=0.129598, min=0.1, max=0.16)
+	params.add('p', value=0.15, min=0.001, max=0.33)
+
+	# Ver para rodar para as outras regiões
+	params.add('lambda0', value=1/len(y), vary=False)
+	params.add('sigma', value=1/7, min=0, vary=False)
+	params.add('rho', value=0.12, min=0, vary=False)
+
+	params.add('epsilonA', value=0, min=0, max=0.2)
+	params.add('epsilonI', value=0.2, min=0.1, max=0.4)
+
+	#params.add('cA', value=1.25, min=1.0, max=1.5)
+	#params.add('cI', value=0.75, min=0.5, max=1.0)
+	#params.add('gammaD', value=0.14, min=0.10, max=0.15)
+	#params.add('gammaA', expr='cA*gammaD')
+	#params.add('gammaI', expr='cI*gammaD')
+
+	params.add('gammaA',value=0.13, min=0.1, max=0.15)
+	params.add('gammaI',value=0.1, min=0, vary=False)
+	params.add('gammaD', value=0.12, min=0.1, max=0.15)
+
+	params.add('cD', value=1.4, min=1.1, max=1.7)
+	params.add('dD', expr=f'gammaD*{death_rate}/(1-{death_rate})')
+	params.add('dI', expr='cD*dD')
+	#params.add('dI', expr=f'1.3*gammaD')
+
+	params.add('delta', value=0.0001, min=0, max=1.0)
+	params.add('day', value=len(y), min=0, vary=False)
+
+	params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop)
+
+	params.add('Q0', value=0.6*y[-1], vary=False, min=0)
+	# D0 = y[0]
+	# E0 = A0 + I0
+	a = 1.2
+	i = 1.8
+
+	params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0)
+
+	params.add('A0', value=a*y[0], vary=False, min=0)
+	params.add('I0', value=i*y[0], vary=False, min=0)
+
+	if y[0] < 5:
+		params.add('D0', value=y[0], vary=False, min=0)
+	else:
+		params.add('D0', value=y[0], vary=False,  min=0.75 * y[0], max=1.25*y[0])
+
+	params.add('R0', value=0, vary=False)
+
+	residual = edo.residual_edo_D if tag == 'CASES' else edo.residual_edo_M
+	ffunct = edo.eval_edo_D if tag == 'CASES' else edo.eval_edo_M
+
+	return params, residual, ffunct
+
+def fit_edo_shape(x, y, ct, cur, tag):
+
+	params, func, ffunc = get_edo_config(x, y, cur, tag)
+
+	minner = lm.Minimizer(func, params, fcn_args=(y, params))
+	result = minner.minimize()
+
+	forecast = None if result.success == False else ffunc(result.params, 50)
+
+	return result, forecast
+
+def fit_bell_shape(x, y, mod):
+	mod = mod()
+	pars = mod.guess(y, x=x)
+	result = mod.fit(y, pars, x=x)
+	return result, mod
+
+
+def gompertz(x, asymptote, displacement, step_center):
+	transform = 1.0 + x
+	c = m.log(m.log(2.0) / displacement) / step_center
+	return asymptote * np.exp(- displacement * np.exp(-c * transform))
+
+def find_fit_sigmoid(x, y):
+	model_gompertz = lm.models.Model(gompertz)
+	params_gompertz = lm.Parameters()
+	params_gompertz.add('asymptote', value=1E-3, min=1E-8)
+	params_gompertz.add('displacement', value=1E-3, min=1E-8)
+	params_gompertz.add('step_center', value=1E-3, min=1E-8)
+
+	result_gompertz = model_gompertz.fit(y, params_gompertz, x=x)
+
+	step_mod = StepModel(form='erf', prefix='step_')
+	line_mod = LinearModel(prefix='line_')
+
+	params_stln = line_mod.make_params(intercept=y.min(), slope=0)
+	params_stln += step_mod.guess(y, x=x, center=90)
+
+	model_stln = step_mod + line_mod
+	result_stln = model_stln.fit(y, params_stln, x=x)
+
+	ret_result = None
+	ret_model = None
+
+	if result_stln.chisqr < result_gompertz.chisqr:
+		ret_result = result_stln
+		ret_model = model_stln
+	else:
+		ret_result = result_gompertz
+		ret_model = model_gompertz
+
+	return ret_result, ret_model
+
+def find_fit_bell(x, y, ct, log=False):
+
+	ret_result = None
+	ret_model = None
+	current_min_chisqr = np.inf
+
+	old_list = [DampedOscillatorModel, MoffatModel, BreitWignerModel]
+
+	for m in [GaussianModel, LorentzianModel, VoigtModel, PseudoVoigtModel,  Pearson7Model, StudentsTModel, LognormalModel,  SkewedGaussianModel, SkewedVoigtModel, SplitLorentzianModel]:
+		#if log:
+			#loggingg.info(f'find_fit_bell: {mod}')
+
+		result, model = fit_bell_shape(x, y, m)
+
+		if result.success == False or result.chisqr > current_min_chisqr:
+			continue
+
+		ret_result = result
+		ret_model = model
+		current_min_chisqr = ret_result.chisqr
+
+	#if model_fit == None:
+		#loggingg.info(f'find_fit_bell: cannot fit for {ct}')
+
+	return ret_result, ret_model
+
+
+def run_model_bell(x, y, ct, id, ylabel, data_consolidated, model_consolidated, curdate, text):
+	rname = ct.replace('_', ' ')
+	fdata = f'gpdata/dat/{ct}-{id}.dat'
+	fgplot = f'gpdata/{ct}-{id}.gp'
+	fsvg = f'svg/{ct}-{id}.svg'
+	freport = f'report/{ct}-{id}.html'
+
+	result, model = find_fit_bell(x, y, ct)
+
+	if result == None:
+		data_consolidated.append('n.a.')
+		data_consolidated.append('n.a.')
+		dump_xy_dat(fdata,x,y)
+		dump_svg(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}', f'gpdata/dat/{ct}-{id}.dat', 2, f"{rname} data",
+					opt='colorsequence podo',
+					txt1='NO FIT AVAILABLE FOR THE CURRENT DATA', point=True)
+		#loggingg.info(f'run_model_bell: cannot fit deaths for {ct}')
+	else:
+		center = int(round(result.params['center'].value))
+		chisqr = result.chisqr
+
+		data_consolidated.append(center)
+		data_consolidated.append(chisqr)
+		model_consolidated.append(result)
+
+		dump_xyz_dat(fdata,x,y,result.best_fit)
+
+		dump_svg2D(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}',
+					fdata, 2, 3, f"{rname} data",
+					f'{text}',
+					opt='yrange [0<*:]',
+					txt1=f'Mid = {center} days',
+					txt2=f'𝛘² = {chisqr:9.2}')
+	dump_report(freport,result,x,y,7,fsvg,model,ct,ylabel)
+	return
+
+
+def run_model_sigmoid(x, y, ct, id, ylabel, data_consolidated, model_consolidated, curdate, text):
+	rname = ct.replace('_', ' ')
+	fdata = f'gpdata/dat/{ct}-{id}.dat'
+	fgplot = f'gpdata/{ct}-{id}.gp'
+	fsvg = f'svg/{ct}-{id}.svg'
+	freport = f'report/{ct}-{id}.html'
+
+	result, model = find_fit_sigmoid(x, y)
+
+	if result.success == False:
+		data_consolidated.append('n.a.')
+		data_consolidated.append('n.a.')
+
+		dump_xy_dat(fdata,x,y)
+		dump_svg(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}', fdata, 2, f"{rname} data",
+					opt='colorsequence podo',
+					txt1='NO FIT AVAILABLE FOR THE CURRENT DATA', point=True)
+		#loggingg.info(f'run_model_sigmoid: cannot fit sigmoid for {ct}')
+	else:
+		chisqr = result.chisqr
+		center = int(round(result.params['step_center'].value))
+
+		data_consolidated.append(center)
+		data_consolidated.append(chisqr)
+		model_consolidated.append(result)
+
+		dump_xyz_dat(fdata,x,y,result.best_fit)
+		dump_svg2D(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}',
+					fdata, 2, 3,
+					f"{rname} data",
+					f'{text}',
+					opt='yrange [0<*:]',
+					txt1=f'Mid = {center} days',
+					txt2=f'𝛘² = {chisqr:9.2}')
+
+	dump_report(freport,result,x,y,7,fsvg,model,ct,ylabel)
+	return
+
+
+def run_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text):
+	rname = ct.replace('_', ' ')
+	fdata = f'gpdata/dat/{ct}-{id}.dat'
+	fgplot = f'gpdata/{ct}-{id}.gp'
+	fsvg = f'svg/{ct}-{id}.svg'
+	freport = f'report/{ct}-{id}.html'
+
+	model, forecast = fit_edo_shape(x, y, ct, cur, tag)
+
+	if model.success == False:
+		data_consolidated.append('n.a.')
+		data_consolidated.append('n.a.')
+
+		dump_xy_dat(fdata,x,y)
+		dump_svg(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}', fdata, 2, f"{rname} data",
+					opt='colorsequence podo',
+					txt1='NO FIT AVAILABLE FOR THE CURRENT DATA', point=True)
+		#loggingg.info(f'run_edo_model: cannot fit edo for {ct}')
+	else:
+		chisqr = model.chisqr
+		data_consolidated.append(chisqr)
+		model_consolidated.append(model)
+		nx = x if forecast == None else np.arange(len(forecast))
+		dump_xyz_dat(fdata, nx, y, forecast)
+		dump_svg2D(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}',
+					fdata, 2, 3,
+					f"{rname} data",
+					f'{text}',
+					opt='yrange [0<*:]',
+					txt1=f'EDO',
+					txt2=f'𝛘² = {chisqr:9.2}')
+
+	if model != None:		
+		with open(freport, 'w') as f:
+			table_info = f'<tr><td>Success status</td><td>{model.success}</td></tr>'
+			table_info += f'<tr><td>Abort status</td><td>{model.aborted}</td></tr>'
+			table_info += f'<tr><td>Fit message</td><td>{model.message}</td></tr>'
+			table_stat = '<tr> <td>' + model._repr_html_() + '</td></tr>'
+			table_obs = f'<tr><th>Days from the first infected</th><th>{ylabel}</th><th>Model {ylabel}</th></tr>'
+			if forecast != None:
+				for i, j, k in itertools.zip_longest(nx, y, forecast, fillvalue='nan'):
+					table_obs += f'<tr><td>{i}</td><td>{j}</td><td>{k:.0f}</td></tr>'
+			else:
+				for i, j in itertools.zip_longest(x, y, fillvalue='nan'):
+					table_obs += f'<tr><td>{i}</td><td>{j}</td><td>n.a.</td></tr>'
+			f.write(param_page(rname, table_info, table_stat, table_obs,fsvg))
+	return
+
+def run_rolling_average(x, y, ct, id, avgsize, curdate, ylabel):
+	rname = ct.replace('_', ' ')
+	fdata = f'gpdata/dat/{ct}-{id}.dat'
+	fgplot = f'gpdata/{ct}-{id}.gp'
+	fsvg = f'svg/{ct}-{id}.svg'
+	freport = f'report/{ct}-{id}.html'
+
+	dump_xy_dat(fdata,x,y)	
+
+	dump_svg(fgplot, fsvg,
+				f'7-Rolling average of cases for {rname} on {curdate}',
+				f'Total {ylabel}',
+				f'{avgsize}-rolling Average of {ylabel}',
+				fdata, 2, f"{avgsize}-rolling average",
+				opt='xrange [0<*:]\nset yrange [0<*:]',
+				point=False, logx=True, logy=True)
+
+	with open(freport, 'w') as f:
+		table_info = f'<tr><td>Success on a {avgsize}-rolling average</td></tr>'
+		table_stat = f'<tr><th>Day</th><th>{avgsize}-average of {ylabel}</th></tr>'
+		for i, j in zip(x, y):
+			table_stat += f'<tr><td>{i}</td><td>{j}</td></tr>'
+		f.write(param_page(rname, table_info, table_stat, '<tr><td>None</td></tr>',fsvg))
+
+	return 
+
+
+def get_model_socnet(ct, id, curdate):
+	rname = ct.replace('_', ' ')
+	fdata = f'gpdata/dat/{ct}-{id}.dat'
+	fgplot = f'gpdata/{ct}-{id}.gp'
+	fsvg = f'svg/{ct}-{id}.svg'
+	freport = f'report/{ct}-{id}.html'
+	ylabel = 'Acc Infected'
+
+	rname = ct.replace('_', ' ')
+	if os.path.exists(fdata):
+		dump_svg2D(fgplot, fsvg,
+                    f'SARS-COV-2-SOCNET Model for {rname} on {curdate}',
+            		'Days from the first infected',
+            		f'{ylabel}',
+            		fdata, 2, 3,
+            		f"{rname} data",
+                    f'SARS-COV-2-SOCNET Model',
+            		opt='yrange [0<*:]',
+            		txt1=f'SOCNET',
+            		txt2=f'𝛘² = n.a.')
+	else:
+		dump_svg_ph(fgplot, fsvg,
+                    f'SARS-COV-2-SOCNET Model for {rname} on {curdate}',
+					'Days from the first infected', 'Acc Infected',
+					txt1='NO MODE AVAILABLE FOR THE CURRENT DATA')
+	return 

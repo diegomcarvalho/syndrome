@@ -1,0 +1,121 @@
+import pystache
+
+header = """
+<head>
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel=”stylesheet” href=”https://raw.githubusercontent.com/jpswalsh/academicons/master/css/academicons.css”>
+<link rel="stylesheet" href="https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css">
+<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+<header class="w3-container w3-black w3-center" style="padding:16px 16px">
+	<h1 class="w3-margin w3-jumbo">SARS-CoV-2 Models</h1>
+</header>
+"""
+
+footer = """
+<div class="w3-row-padding w3-padding-16 w3-container">
+	<div class="w3-content">
+		<h1><i class="fa fa-address-card w3-padding-16 w3-text-black w3-margin-right"></i>Contacts</h1>
+		<p class="w3-text-black"><b>Diego Carvalho</b>&nbsp;
+			<a href="http://lattes.cnpq.br/3413821323159487" target="_blank" style="text-decoration:none"
+				class="ai ai-lattes-square w3-hover-opacity w3-text-grey"></a>
+			<a href="https://www.researchgate.net/profile/Diego_Carvalho" target="_blank" style="text-decoration:none"
+				class="ai ai-researchgate-square w3-hover-opacity w3-text-grey"></a>
+			<a href="https://scholar.google.com/citations?user=guvvdjEAAAAJ&hl=en" target="_blank"
+				style="text-decoration:none" class="ai ai-google-scholar-square w3-hover-opacity w3-text-grey"></a>
+			<a href="https://orcid.org/0000-0003-1592-6327" target="_blank" style="text-decoration:none"
+				class="ai ai-orcid-square w3-hover-opacity w3-text-grey"></a>
+			<a href="https://www.linkedin.com/in/diegomoreiracarvalho/" target="_blank" style="text-decoration:none"
+				class="fa fa-linkedin-square w3-hover-opacity w3-text-grey"></a>
+		</p>
+		<p class="w3-text-black"><b>Rafael Barbastefano</b>&nbsp;
+			<a href="http://lattes.cnpq.br/8787987384592780" target="_blank" style="text-decoration:none"
+				class="ai ai-lattes-square w3-hover-opacity w3-text-grey"></a>
+			<a href="https://www.researchgate.net/profile/Rafael_Barbastefano" target="_blank"
+				style="text-decoration:none" class="ai ai-researchgate-square w3-hover-opacity w3-text-grey"></a>
+			<a href="http://scholar.google.com.br/citations?user=9VqAq8IAAAAJ&hl=pt-BR" target="_blank"
+				style="text-decoration:none" class="ai ai-google-scholar-square w3-hover-opacity w3-text-grey"></a>
+			<a href="http://orcid.org/0000-0001-8253-6308" target="_blank" style="text-decoration:none"
+				class="ai ai-orcid-square w3-hover-opacity w3-text-grey"></a>
+			<a href="https://www.linkedin.com/in/rafael-barbastefano-330444/" target="_blank"
+				style="text-decoration:none" class="fa fa-linkedin-square w3-hover-opacity w3-text-grey"></a>
+		</p>
+		<p class="w3-text-black"><b>Dayse Pastore</b>&nbsp;
+			<a href="http://lattes.cnpq.br/3142092367803598" target="_blank" style="text-decoration:none"
+				class="ai ai-lattes-square w3-hover-opacity w3-text-grey"></a>
+			<a href="https://www.researchgate.net/profile/Dayse_Pastore" target="_blank" style="text-decoration:none"
+				class="ai ai-researchgate-square w3-hover-opacity w3-text-grey"></a>
+			<a href="https://scholar.google.com.br/citations?user=76bOXsYAAAAJ&hl=pt-BR&authuser=1" target="_blank"
+				style="text-decoration:none" class="ai ai-google-scholar-square w3-hover-opacity w3-text-grey"></a>
+			<a href="https://orcid.org/0000-0002-0905-0085" target="_blank" style="text-decoration:none"
+				class="ai ai-orcid-square w3-hover-opacity w3-text-grey"></a>
+			<a href="https://www.linkedin.com/in/dayse-pastore-65507481" target="_blank" style="text-decoration:none"
+				class="fa fa-linkedin-square w3-hover-opacity w3-text-grey"></a>
+		</p>
+		<p class="w3-text-black"><b>Maria Clara Lippe</b>&nbsp;
+			<a href="http://lattes.cnpq.br/6984336636518592" target="_blank" style="text-decoration:none"
+				class="ai ai-lattes-square w3-hover-opacity w3-text-grey"></a>
+			<a href="https://www.researchgate.net/profile/Maria_Clara_Lippi target=" _blank"
+				style="text-decoration:none" class="ai ai-researchgate-square w3-hover-opacity w3-text-grey"></a>
+			<a href="https://orcid.org/0000-0002-3540-1301" target="_blank" style="text-decoration:none"
+				class="ai ai-orcid-square w3-hover-opacity w3-text-grey"></a>
+		</p>
+	</div>
+</div>
+"""
+
+param_mustach = """ 
+{{{HEADER}}}
+<div class="w3-row-padding w3-padding-16 w3-container">
+	<div class="w3-content">
+		<h1><i class="fa fa-pencil-square-o w3-padding-16 w3-text-black w3-margin-right"></i>Info</h1>
+<p class="w3-text-black">The graphics below present the current evolution of the COVID-19 in the heretofore region, and they depicted data provided by the European CDC, the Brazilian Ministry of Health, and forecast models created by us.  The models build on our research of statistical regression, ordinary differential equation systems, and social network dynamics.</p>
+
+<p class="w3-text-black">We are publishing this information to share our knowledge about the pandemic and exchange insights with our research peers and reviewers. This information provided as is,  and without warranties of any kind either express or implied. The authors do not guarantee validity, accuracy, or correctness as any implication or future result.</p>
+	</div>
+</div>
+<div class="w3-row-padding w3-padding-16 w3-container">
+	<div class="w3-content">
+		<h1><i class="fa fa-globe w3-padding-16 w3-text-black w3-margin-right"></i>{{TAG_FILE}}'s parameters</h1>
+		<div class="w3-content"><center><img src="../{{{TAG_FIG}}}"/></center></div>
+		<h2><i class="fa fa-exclamation-circle w3-padding-16 w3-text-black w3-margin-right"></i>Information</h2>
+			<div class='w3-responsive container'>
+				<table class="w3-table w3-striped w3-bordered w3-border w3-tiny">
+				{{{TABLE_INFO}}}
+				</table>
+			</div>
+		<h2><i class="fa fa-exclamation-circle w3-padding-16 w3-text-black w3-margin-right"></i>Model Result</h2>
+			<div class='w3-responsive container'>
+				<table class="w3-table w3-striped w3-bordered w3-border w3-tiny">
+				{{{TABLE_STAT}}}
+				</table>
+			</div>
+		<h2><i class="fa fa-exclamation-circle w3-padding-16 w3-text-black w3-margin-right"></i>Observation</h2>
+			<div class="w3-responsive container">
+				<table class="w3-table w3-striped w3-bordered w3-border w3-tiny">
+				{{{TABLE_VAR}}}
+				</table>
+			</div>
+	</div>
+</div>
+{{{FOOTER}}}
+</body>
+""" 
+
+def param_page(tag_file, table_info, table_stat, table_var, fig):
+	table_stat = table_stat.replace('<table>', '<table class="w3-table-all w3-tiny">')
+	mustach_dict = {
+		'HEADER': header,
+		'TAG_FIG': fig,
+		'TAG_FILE': tag_file,
+		'TABLE_INFO': table_info,
+		'TABLE_STAT': table_stat,
+		'TABLE_VAR': table_var,
+		'FOOTER': footer
+	}
+	return pystache.render(param_mustach, mustach_dict)
+
