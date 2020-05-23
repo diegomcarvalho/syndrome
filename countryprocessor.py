@@ -51,13 +51,17 @@ def process_country(ct, datadict, curdate, paramp):
 	if len(mdc) == 1:
 		paramp.set_param.remote(ct,mdc[0])
 		model_consolidated.append(mdc[0])
+		
 	# Place holder for EDO model
 	x = data['eDay'].values
 	y = data['accDeaths'].values
 	fit.run_edo_model(x, y, ct, 7, data, 'DEATHS', 'Acc deaths', data_consolidated, model_consolidated, curdate, 'SARS-COV-2-EDO-BR Model on deaths')
 
 	# Place holder for SOCNET model
-	fit.get_model_socnet(ct, 8, curdate)
+	#fit.get_model_socnet(ct, 8, curdate)
+	x = data['eDay'].values
+	y = data['accCases'].values
+	fit.run_socnet_model(x, y, ct, 8, data, 'CASES', 'Acc Infected', data_consolidated, mdc, curdate, 'SARS-COV-2-SOCNET-BR Model on cases')
 
 	with open(f'log/{ct}.dat', 'w') as f:
 		f.write('process_country')

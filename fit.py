@@ -316,7 +316,7 @@ def run_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_conso
 		chisqr = model.chisqr
 		data_consolidated.append(chisqr)
 		model_consolidated.append(model)
-		nx = x if forecast == None else np.arange(len(forecast))
+		nx = x if forecast is None else np.arange(len(forecast))
 		dump_xyz_dat(fdata, nx, y, forecast)
 		dump_svg2D(fgplot, fsvg,
 					f'{text} for {rname} on {curdate}',
@@ -398,3 +398,63 @@ def get_model_socnet(ct, id, curdate):
 					'Days from the first infected', 'Acc Infected',
 					txt1='NO MODE AVAILABLE FOR THE CURRENT DATA')
 	return 
+
+def run_socnet_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text):
+	import fitrs3
+	from scipy.stats import chisquare
+	rname = ct.replace('_', ' ')
+	fdata = f'gpdata/dat/{ct}-{id}.dat'
+	fgplot = f'gpdata/{ct}-{id}.gp'
+	fsvg = f'svg/{ct}-{id}.svg'
+	freport = f'report/{ct}-{id}.html'
+
+	file1 = f'scnlog/{ct}-p1.dat'
+	file2 = f'scnlog/{ct}-p2.dat'
+
+	partition = len(y) // 4
+
+	forecast = fitrs3.previsaoredeslp(y, 40, 200, 400, 100, file1, file2, partition, y[-1] + 50, y[-1] * 10, 4, 6, 0.2, 0.7, 0, 101)
+
+	if forecast is None:
+		data_consolidated.append('n.a.')
+		data_consolidated.append('n.a.')
+
+		dump_xy_dat(fdata,x,y)
+		dump_svg(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}', fdata, 2, f"{rname} data",
+					opt='colorsequence podo',
+					txt1='NO FIT AVAILABLE FOR THE CURRENT DATA', point=True)
+	else:
+		chisqr = chisquare(y, f_exp=forecast[:len(y)])[0]
+		data_consolidated.append(chisqr)
+		model_consolidated.append('socnet-fitrs3')
+		nx = x if forecast is None else np.arange(len(forecast))
+		dump_xyz_dat(fdata, nx, y, forecast)
+		dump_svg2D(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}',
+					fdata, 2, 3,
+					f"{rname} data",
+					f'{text}',
+					opt='yrange [0<*:]',
+					txt1=f'SOCNET',
+					txt2=f'𝛘² = {chisqr:9.2}')
+
+	if forecast is not None:		
+		with open(freport, 'w') as f:
+			table_info = f'<tr><td>Success status</td><td>Forecast calculated with socnet-fitrs3</td></tr>'
+			table_info += f'<tr><td>Abort status</td><td>n.a.</td></tr>'
+			table_info += f'<tr><td>Fit message</td><td>n.a.</td></tr>'
+			table_stat = '<tr> <td>n.a</td></tr>'
+			table_obs = f'<tr><th>Days from the first infected</th><th>{ylabel}</th><th>Model {ylabel}</th></tr>'
+			if forecast != None:
+				for i, j, k in itertools.zip_longest(nx, y, forecast, fillvalue='nan'):
+					table_obs += f'<tr><td>{i}</td><td>{j}</td><td>{k:.0f}</td></tr>'
+			else:
+				for i, j in itertools.zip_longest(x, y, fillvalue='nan'):
+					table_obs += f'<tr><td>{i}</td><td>{j}</td><td>n.a.</td></tr>'
+			f.write(param_page(rname, table_info, table_stat, table_obs,fsvg))
+	return

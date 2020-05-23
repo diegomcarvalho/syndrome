@@ -5,3 +5,4 @@ web/*
 log/*
 */__pycache__/*
 *.pyc
+scnlog/*

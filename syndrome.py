@@ -18,11 +18,9 @@ def main():
     workload = list()
 
     dt.process_MS(workload, fetchdata=True)
-    dt.process_CDCEU(workload, fetchdata=True)
+    #dt.process_CDCEU(workload, fetchdata=True)
 
     workerlist = list()
-
-    
 
     for i in workload:
         print(f'Submiting {i[0]}')

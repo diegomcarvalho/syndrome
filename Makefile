@@ -2,6 +2,14 @@ YESTERDAY=$(shell date --date=yesterday +%Y%m%d)
 SITEROOT=/storage/covid/carvalho
 BACKUP=$(SITEROOT)/$(YESTERDAY)
 
+all:
+	echo make start
+	echo make stop
+	echo make run
+	echo make backup
+	make build
+	make clean
+	
 start:
 	bash start.sh
 
@@ -31,4 +39,5 @@ build: $(BACKUP)
 clean:
 	rm -f gpdata/*.gp gpdata/dat/*.dat log/*.dat report/*.html svg/*.svg 
 	rm -f web/*.html web/svg/*.svg web/report/*.html
-	rm -f timeline.json __pycache__ 
+	rm -f timeline.json 
+	rm -fr __pycache__ 
