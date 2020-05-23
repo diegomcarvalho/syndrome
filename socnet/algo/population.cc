@@ -29,3 +29,30 @@ Population::seed_infected(const int i0active, const int i0recovered, const doubl
 
     return;
 }
+
+void
+Population::seed_infected(const std::vector<int>& i0active, const std::vector<int>& i0recovered, const double percentage)
+{
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+    bool quarantine;
+
+    int doi = 0;
+    for (auto &n : i0recovered) {
+        for (int i = 0; i < n; i++) {
+            quarantine = (dis(gen) < percentage) ? true : false;
+            seed_individual(false, doi, Status::recovered, quarantine);
+        }
+        doi++;
+    }
+
+    doi = 0;
+    for (auto& n : i0active) {
+        for (int i = 0; i < n; i++) {
+            quarantine = (dis(gen) < percentage) ? true : false;
+            seed_individual(true, doi, Status::sick, quarantine);
+        }
+        doi++;
+    }
+
+    return;
+}

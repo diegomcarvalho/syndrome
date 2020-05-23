@@ -158,15 +158,15 @@ calculate_infection(const int duration,
 }
 
 std::vector<std::vector<double>>
-calculate_infection_varying_perc(const int duration,
+calculate_infected_varying(const int duration,
                                  const int susceptible_max_size,
-                                 const int i0active,
-                                 const int i0recovered,
+                                 const std::vector<int>& i0active,
+                                 const std::vector<int>& i0recovered,
                                  const int samples,
                                  const int max_transmission_day,
                                  const int max_in_quarantine,
                                  const double gamma,
-                                 const std::vector<double> percentage_in_quarantine,
+                                 const std::vector<double>& percentage_in_quarantine,
                                  const bool recont)
 {
     std::uniform_real_distribution<> dis(0.0, 1.0);
@@ -174,7 +174,16 @@ calculate_infection_varying_perc(const int duration,
 
     int S, I;
 
-    Population population(susceptible_max_size + i0active + i0recovered);
+    int sum_i0a = 0;
+    int sum_i0r = 0;
+
+    for (auto& n : i0active)
+        sum_i0a += n;
+
+    for (auto& n : i0recovered)
+        sum_i0r += n;
+
+    Population population(susceptible_max_size + sum_i0a + sum_i0r);
 
     Statistics<double> infected_stat(duration, 0.0);
     Statistics<double> susceptible_stat(duration, 0.0);
@@ -182,7 +191,7 @@ calculate_infection_varying_perc(const int duration,
 
     for (int k = 0; k < samples; k++) {
         population.seed_infected(i0active, i0recovered, percentage_in_quarantine[0]);
-        S = susceptible_max_size - i0active - i0recovered;
+        S = susceptible_max_size - sum_i0a - sum_i0r;
 
         for (int day = 0; day < duration; day++) {
             I = population.size();

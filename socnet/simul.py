@@ -8,7 +8,15 @@ calc_func_varing = None
 num_cpu = None
 
 
-def calculate_infected(duration, population_size,  gamma,  percentage_in_quarentine,  samples,  max_in_quarentine,  max_transmission_day,  i0active,  i0recovered) -> SimulationEvent:
+def calculate_infected(duration: int,
+                       population_size: int,
+                       gamma: float,
+                       percentage_in_quarentine: float,
+                       samples: int,
+                       max_in_quarentine: int,
+                       max_transmission_day: int,
+                       i0active: int,
+                       i0recovered: int) -> SimulationEvent:
     """Returns SimulationEvent
     args: duration, population_size, gamma, percentage_in_quarentine, samples, max_in_quarentine, max_transmission_day, i0active, i0recovered
     Evolves the social network dynamics for a population with gamma as parameter for a power law.
@@ -56,7 +64,16 @@ def p_calculate_infected(duration, population_size,  gamma,  percentage_in_quare
     return simul
 
 
-def calculate_infection_varying_perc(duration, population_size,  gamma,  percentage_in_quarentine,  samples,  max_in_quarentine,  max_transmission_day,  i0active,  i0recovered, recalculate) -> SimulationEvent:
+def calculate_infected_varying(duration: int,
+                                population_size: int,
+                                gamma: float,
+                                percentage_in_quarentine: list,
+                                samples: int,
+                                max_in_quarentine: int,
+                                max_transmission_day: int,
+                                i0active: list,
+                                i0recovered: list,
+                                recalculate: bool) -> SimulationEvent:
     """Returns SimulationEvent
     args: duration, population_size, gamma, percentage_in_quarentine, samples, max_in_quarentine, max_transmission_day, i0active, i0recovered
     Evolves the social network dynamics for a population with gamma as parameter for a power law.
@@ -76,7 +93,15 @@ def calculate_infection_varying_perc(duration, population_size,  gamma,  percent
     return simul
 
 
-def p_calculate_infection_varying_perc(duration, population_size,  gamma,  percentage_in_quarentine,  samples,  max_in_quarentine,  max_transmission_day,  i0active,  i0recovered) -> SimulationEvent:
+def p_calculate_infection_varying_perc(duration: int,
+                                       population_size: int,
+                                       gamma: float,
+                                       percentage_in_quarentine: float,
+                                       samples: int,
+                                       max_in_quarentine: int,
+                                       max_transmission_day: int,
+                                       i0active: int,
+                                       i0recovered: int) -> SimulationEvent:
     """Returns SimulationEvent
     args: duration, population_size, gamma, percentage_in_quarentine, samples, max_in_quarentine, max_transmission_day, i0active, i0recovered
     Evolves the social network dynamics for a population with gamma as parameter for a power law.
@@ -92,7 +117,7 @@ def p_calculate_infection_varying_perc(duration, population_size,  gamma,  perce
               psample, max_in_quarentine, max_transmission_day, i0active, i0recovered) for _ in range(num_cpu)]
 
     with Pool(processes=num_cpu) as p:
-        results = p.starmap(calculate_infection_varying_perc, param)
+        results = p.starmap(calculate_infected_varying, param)
 
     for ret in results:
         simul.mean += ret.mean / num_cpu
@@ -103,16 +128,14 @@ def p_calculate_infection_varying_perc(duration, population_size,  gamma,  perce
     return simul
 
 
-def init_algo(s):
+def init_algo(s: str) -> None:
     global calc_func, calc_func_varing
     if s == 'FAST':
         calc_func = calculate.calculate_infection
-        calc_func_varing = calculate.calculate_infection_varying_perc
+        calc_func_varing = calculate.calculate_infected_varying
     else:
         calc_func = calculate.calculate_infection
-        calc_func_varing = calculate.calculate_infection_varying_perc
-
-    #print(f"Running {s} routines.")
+        calc_func_varing = calculate.calculate_infected_varying
     return
 
 
