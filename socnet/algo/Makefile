@@ -3,16 +3,17 @@ VERSION = $(shell git describe --tags --always --long --dirty)
 INLCUDES = $(shell python3 -m pybind11 --includes)
 OBS = calculate.o population.o pybindmodule.o
 CC = c++
-CFLAGS = -O3 -Wall -std=c++11 $(INLCUDES) $(COSFLAGS)
-LDFLAGS= $(LOSFLAGS)
 
 ifeq ($(shell uname -s), Darwin)
 	COSFLAGS = #-include-pch statistics.hpp.gch
     LOSFLAGS = -shared -undefined dynamic_lookup
 else
-	COSFLAGS = -fPIC
+	COSFLAGS = -fPIC -shared
     LOSFLAGS = -shared -fPIC
 endif
+
+CFLAGS = -O3 -Wall -std=c++11 $(INLCUDES) $(COSFLAGS)
+LDFLAGS= $(LOSFLAGS)
 
 all: $(MODULE)
 

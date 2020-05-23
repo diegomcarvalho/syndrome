@@ -101,7 +101,7 @@ def process_Brazil_MS(df, workload):
 def process_MS(workload, fetchdata=True):
 
 	if fetchdata:
-		df = pd.read_excel('data/DT_PAINEL_COVIDBR_20200521.xlsx')
+		df = pd.read_excel('data/DT_PAINEL_COVIDBR_20200522.xlsx')
 		df.to_csv('data/MS.csv')
 	else:
 		df = pd.read_csv('data/MS.csv')

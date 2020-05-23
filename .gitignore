@@ -1,0 +1,7 @@
+gpdata/*
+report/*
+svg/*
+web/*
+log/*
+*/__pycache__/*
+*.pyc

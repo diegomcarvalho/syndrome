@@ -1,4 +1,4 @@
-YESTERDAY=$(date --date=yesterday +%Y%m%d)
+YESTERDAY=$(shell date --date=yesterday +%Y%m%d)
 SITEROOT=/storage/covid/carvalho
 BACKUP=$(SITEROOT)/$(YESTERDAY)
 
@@ -12,6 +12,11 @@ run:
 	python3 syndrome.py
 
 $(BACKUP):
+	echo Creating $(BACKUP)
+	mkdir -p $(BACKUP)
+	mv $(SITEROOT)/index.html $(SITEROOT)/edo.html $(SITEROOT)/socnet.html $(SITEROOT)/web $(SITEROOT)/$(YESTERDAY)
+
+backup:
 	echo Creating $(BACKUP)
 	mkdir -p $(BACKUP)
 	mv $(SITEROOT)/index.html $(SITEROOT)/edo.html $(SITEROOT)/socnet.html $(SITEROOT)/web $(SITEROOT)/$(YESTERDAY)
