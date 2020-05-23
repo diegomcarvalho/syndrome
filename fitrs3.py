@@ -3,6 +3,7 @@ import random
 import math
 import numba
 from scipy.stats import chisquare
+from socnet import calculate_infected_varying
 
 # Ajuste do Modelo de Redes - 10-05-2020
 # Evolucao COVID-19 - Modelo 2- 16-03-2020
@@ -20,7 +21,26 @@ def primeiroscasos(numero,pacientes_recuperados):
             lista_iniciais.append([0,-1,1,random.randint(0,13),0,1,0]) 
     return lista_iniciais
 
-def rodarede(tam_inicial,coeficiente,tamanho_populacao,parcelaquarentena,max_contagio_quarentena,pacientes_recuperados,tempo,numsequencias):
+def p2casos(n_tot, n_i0r):
+    i0a = [0 for _ in range(14)]
+    i0r = [0 for _ in range(14)]
+    for k in range(n_tot):
+        if k < n_i0r:
+            i0r[0] += 1
+        else:
+            i0a[random.randint(0, 13)] += 1
+    return i0a, i0r
+
+def p2rodarede(tam_inicial,coeficiente,tamanho_populacao,parcelaquarentena,max_contagio_quarentena,pacientes_recuperados,tempo,numsequencias):
+    i0a, i0r = p2casos(tam_inicial, pacientes_recuperados)
+    piq = [parcelaquarentena for _ in range(tempo)]
+    pop = int(tamanho_populacao)
+    
+    result = calculate_infected_varying(tempo,pop,coeficiente,piq,numsequencias,max_contagio_quarentena,14,i0a,i0r,False)
+
+    return result.mean
+
+def pyrodarede(tam_inicial,coeficiente,tamanho_populacao,parcelaquarentena,max_contagio_quarentena,pacientes_recuperados,tempo,numsequencias):
 
     max_quarentena = max_contagio_quarentena
 
@@ -62,48 +82,6 @@ def rodarede(tam_inicial,coeficiente,tamanho_populacao,parcelaquarentena,max_con
                         lista_todos[paciente][5] = 0
     
     return Lista_final
-
-def rodaredecomlistaqvar(lista_inicial,coeficiente,tamanho_populacao,parcelaquarentena,max_contagio_quarentena,tempo,numsequencias):
-
-    max_quarentena = max_contagio_quarentena
-
-    Lista_final = []
-    
-    for i in range(tempo):
-        Lista_final.append(0)
-    
-    for k in range(numsequencias):
-        lista_todos = lista_inicial
-        populacao_disponivel = tamanho_populacao
-        for dia in range(tempo):
-            populacao_contaminada = len(lista_todos)
-            Lista_final[dia] += populacao_contaminada/numsequencias
-            for paciente in range(populacao_contaminada):
-                if (lista_todos[paciente][2]==1):
-                    if (lista_todos[paciente][3]<14):
-                        numero_novos = int(round(leidepotencias(1,coeficiente,100)))
-                        if(lista_todos[paciente][6]==1):
-                            if(lista_todos[paciente][4]+numero_novos>max_quarentena):
-                                numero_novos = max_quarentena - lista_todos[paciente][4]
-                                if(numero_novos<0):
-                                    numero_novos = 0
-                        contaminados_novos = 0
-                        for novos in range(numero_novos):
-                            if (random.randint(1,tamanho_populacao)<populacao_disponivel):
-                                contaminados_novos += 1
-                                populacao_disponivel -= 1
-                                if(random.random()<parcelaquarentena):
-                                    lista_todos.append([dia,paciente,1,0,0,1,1])
-                                else:
-                                    lista_todos.append([dia,paciente,1,0,0,1,0])
-                        lista_todos[paciente][3] += 1
-                        lista_todos[paciente][4] += contaminados_novos
-                    else:
-                        lista_todos[paciente][2] = 0
-                        lista_todos[paciente][5] = 0
-    
-    return Lista_final
-
 
 
 
@@ -161,7 +139,7 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
         print(4-r1,end=' ')
         for r2 in range(4):
             tamanho_populacao = tamanho_populacao_min + r2 * passo_pop
-            medias = rodarede(tam_inicial, coeficiente, tamanho_populacao,parcelaquarentena_med,max_quarentena_med,pacientes_recuperados_med,tempo,numsequencias//2)
+            medias = p2rodarede(tam_inicial, coeficiente, tamanho_populacao,parcelaquarentena_med,max_quarentena_med,pacientes_recuperados_med,tempo,numsequencias//2)
             errotmp = chisquare(medias, f_exp=dados)[0]
             if(errotmp<erro_prep):
                 coeficiente_min_tmp = max(mincoef,coeficiente-passo_coef)
@@ -187,7 +165,7 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
 
         #rodarede(tam_inicial,coeficiente,tamanho_populacao,parcelaquarentena,max_contagio_quarentena,pacientes_recuperados,tempo,numsequencias)
         
-        medias = rodarede(tam_inicial, coeficiente, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
+        medias = p2rodarede(tam_inicial, coeficiente, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
 
         errotmp = chisquare(medias, f_exp=dados)[0]
         
@@ -195,8 +173,8 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
         if(errotmp<erro):
             coeficientetmp1 = max(mincoef,coeficiente - passo)
             coeficientetmp2 = min(maxcoef,coeficiente + passo)
-            medias1 = rodarede(tam_inicial, coeficientetmp1, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
-            medias2 = rodarede(tam_inicial, coeficientetmp2, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
+            medias1 = p2rodarede(tam_inicial, coeficientetmp1, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
+            medias2 = p2rodarede(tam_inicial, coeficientetmp2, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
             errotmp1 = chisquare(medias1, f_exp=dados)[0]
             errotmp2 = chisquare(medias2, f_exp=dados)[0]
             if(errotmp1<errotmp):
@@ -205,7 +183,7 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
                     medias = medias1
                     coeficiente = coeficientetmp1
                     coeficientetmp1 = max(mincoef,coeficiente - passo)
-                    medias1 = rodarede(tam_inicial, coeficientetmp1, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
+                    medias1 = p2rodarede(tam_inicial, coeficientetmp1, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
                     errotmp1 = chisquare(medias1, f_exp=dados)[0]
             elif(errotmp2<errotmp):
                 while (errotmp2<errotmp):
@@ -213,13 +191,13 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
                     medias = medias2
                     coeficiente = coeficientetmp2
                     coeficientetmp2 = min(maxcoef,coeficiente + passo)
-                    medias2 = rodarede(tam_inicial, coeficientetmp2, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
+                    medias2 = p2rodarede(tam_inicial, coeficientetmp2, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
                     errotmp2 = chisquare(medias2, f_exp=dados)[0]
                 
             poptmp1 = max(minpop,tamanho_populacao - passopop)
             poptmp2 = min(maxpop,tamanho_populacao + passopop)
-            medias1 = rodarede(tam_inicial, coeficiente,poptmp1,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
-            medias2 = rodarede(tam_inicial, coeficiente,poptmp2,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
+            medias1 = p2rodarede(tam_inicial, coeficiente,poptmp1,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
+            medias2 = p2rodarede(tam_inicial, coeficiente,poptmp2,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
             errotmp1 = chisquare(medias1, f_exp=dados)[0]
             errotmp2 = chisquare(medias2, f_exp=dados)[0]
             if(errotmp1<errotmp):
@@ -228,7 +206,7 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
                     medias = medias1
                     tamanho_populacao = poptmp1
                     poptmp1 = max(minpop,tamanho_populacao - passopop)
-                    medias1 = rodarede(tam_inicial, coeficiente,poptmp1,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
+                    medias1 = p2rodarede(tam_inicial, coeficiente,poptmp1,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
                     errotmp1 = chisquare(medias1, f_exp=dados)[0]
             elif(errotmp2<errotmp):
                 while (errotmp2<errotmp):
@@ -236,7 +214,7 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
                     medias = medias2
                     tamanho_populacao = poptmp2
                     poptmp2 = min(maxpop,tamanho_populacao + passopop)
-                    medias2 = rodarede(tam_inicial, coeficiente,poptmp2,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
+                    medias2 = p2rodarede(tam_inicial, coeficiente,poptmp2,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
                     errotmp2 = chisquare(medias2, f_exp=dados)[0]
                 
         
@@ -364,7 +342,7 @@ def previsaoredes(vetor,numdias,tam_amostra,num_sequencias,tam_ressorteio,arquiv
     maxpop = maxpop // fator
     minrecuperados = minrecuperados // fator
     resultado_ajuste = adaptavalores(vetordiv,0,tamanho_vetor2,tam_amostra,num_sequencias,tam_ressorteio,arquivo,semente,minpop,maxpop,mincoef,maxcoef,minparc,maxparc,minrecuperados)
-    extrapolacao = rodarede(vetordiv[0],resultado_ajuste[1],resultado_ajuste[0],resultado_ajuste[2],resultado_ajuste[3],resultado_ajuste[4],tamanho_vetor2+numdias,tam_amostra)
+    extrapolacao = p2rodarede(vetordiv[0],resultado_ajuste[1],resultado_ajuste[0],resultado_ajuste[2],resultado_ajuste[3],resultado_ajuste[4],tamanho_vetor2+numdias,tam_amostra)
     extrapolacao_mult = [round(EX * fator,6) for EX in extrapolacao]
     for j in range(contazero):
         extrapolacao_mult.insert(0,1)
@@ -396,14 +374,14 @@ def previsaoredeslp(vetor,numdias,tam_amostra,num_sequencias,tam_ressorteio,arqu
     print(minpop,maxpop)
     minrecuperados = minrecuperados // fator
     resultado_ajuste1 = adaptavalores(vetordiv1,0,len(vetordiv1),tam_amostra,num_sequencias,tam_ressorteio,arquivo1,semente,minpop,maxpop,mincoef,maxcoef,minparc,maxparc,minrecuperados)
-    extrapolacao1 = rodarede(vetordiv1[0],resultado_ajuste1[1],resultado_ajuste1[0],resultado_ajuste1[2],resultado_ajuste1[3],resultado_ajuste1[4],len(vetordiv1),tam_amostra)
+    extrapolacao1 = p2rodarede(vetordiv1[0],resultado_ajuste1[1],resultado_ajuste1[0],resultado_ajuste1[2],resultado_ajuste1[3],resultado_ajuste1[4],len(vetordiv1),tam_amostra)
     extrapolacao_mult1 = [round(EX * fator,6) for EX in extrapolacao1]
     if (len(extrapolacao_mult1)>14):
         minrecuperados2 = max(0,2*extrapolacao_mult1[0]-extrapolacao_mult1[-1])
     else:
         minrecuperados2 = 0
     resultado_ajuste2 = adaptavalores(vetordiv2,0,len(vetordiv2),tam_amostra,num_sequencias,tam_ressorteio,arquivo2,semente,minpop,maxpop,mincoef,maxcoef,minparc,maxparc,minrecuperados2)
-    extrapolacao2 = rodarede(vetordiv2[0],resultado_ajuste2[1],resultado_ajuste2[0],resultado_ajuste2[2],resultado_ajuste2[3],resultado_ajuste2[4],len(vetordiv2)+numdias,tam_amostra)
+    extrapolacao2 = p2rodarede(vetordiv2[0],resultado_ajuste2[1],resultado_ajuste2[0],resultado_ajuste2[2],resultado_ajuste2[3],resultado_ajuste2[4],len(vetordiv2)+numdias,tam_amostra)
     for j in range(contazero):
         extrapolacao_mult1.insert(0,1)
     extrapolacao_mult2 = [round(EX * fator,6) for EX in extrapolacao2]
