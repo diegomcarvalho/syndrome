@@ -1,10 +1,8 @@
 import numpy as np
-from scipy.integrate import odeint
 import random
 import math
-import pandas as pd
-import lmfit as lm
 import numba
+from scipy.stats import chisquare
 
 # Ajuste do Modelo de Redes - 10-05-2020
 # Evolucao COVID-19 - Modelo 2- 16-03-2020
@@ -21,15 +19,6 @@ def primeiroscasos(numero,pacientes_recuperados):
         else:    
             lista_iniciais.append([0,-1,1,random.randint(0,13),0,1,0]) 
     return lista_iniciais
-
-
-def EQM(vetor1,vetor2):
-    tamanho = min(len(vetor1),len(vetor2))
-    soma = 0
-    for n in range(tamanho):
-        soma += (vetor1[n] -vetor2[n]) ** 2
-    return soma/tamanho
-
 
 def rodarede(tam_inicial,coeficiente,tamanho_populacao,parcelaquarentena,max_contagio_quarentena,pacientes_recuperados,tempo,numsequencias):
 
@@ -173,7 +162,7 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
         for r2 in range(4):
             tamanho_populacao = tamanho_populacao_min + r2 * passo_pop
             medias = rodarede(tam_inicial, coeficiente, tamanho_populacao,parcelaquarentena_med,max_quarentena_med,pacientes_recuperados_med,tempo,numsequencias//2)
-            errotmp = math.sqrt(EQM(medias,dados))
+            errotmp = chisquare(medias, f_exp=dados)[0]
             if(errotmp<erro_prep):
                 coeficiente_min_tmp = max(mincoef,coeficiente-passo_coef)
                 coeficiente_max_tmp = coeficiente + passo_coef
@@ -200,7 +189,7 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
         
         medias = rodarede(tam_inicial, coeficiente, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
 
-        errotmp = math.sqrt(EQM(medias,dados))
+        errotmp = chisquare(medias, f_exp=dados)[0]
         
         #Busca local em torno do coeficiente e do tamanho de populacao
         if(errotmp<erro):
@@ -208,8 +197,8 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
             coeficientetmp2 = min(maxcoef,coeficiente + passo)
             medias1 = rodarede(tam_inicial, coeficientetmp1, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
             medias2 = rodarede(tam_inicial, coeficientetmp2, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
-            errotmp1 = math.sqrt(EQM(medias1,dados))
-            errotmp2 = math.sqrt(EQM(medias2,dados))
+            errotmp1 = chisquare(medias1, f_exp=dados)[0]
+            errotmp2 = chisquare(medias2, f_exp=dados)[0]
             if(errotmp1<errotmp):
                 while (errotmp1<errotmp):
                     errotmp = errotmp1
@@ -217,7 +206,7 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
                     coeficiente = coeficientetmp1
                     coeficientetmp1 = max(mincoef,coeficiente - passo)
                     medias1 = rodarede(tam_inicial, coeficientetmp1, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
-                    errotmp1 = math.sqrt(EQM(medias1,dados))
+                    errotmp1 = chisquare(medias1, f_exp=dados)[0]
             elif(errotmp2<errotmp):
                 while (errotmp2<errotmp):
                     errotmp = errotmp2
@@ -225,14 +214,14 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
                     coeficiente = coeficientetmp2
                     coeficientetmp2 = min(maxcoef,coeficiente + passo)
                     medias2 = rodarede(tam_inicial, coeficientetmp2, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
-                    errotmp2 = math.sqrt(EQM(medias2,dados))
+                    errotmp2 = chisquare(medias2, f_exp=dados)[0]
                 
             poptmp1 = max(minpop,tamanho_populacao - passopop)
             poptmp2 = min(maxpop,tamanho_populacao + passopop)
             medias1 = rodarede(tam_inicial, coeficiente,poptmp1,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
             medias2 = rodarede(tam_inicial, coeficiente,poptmp2,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
-            errotmp1 = math.sqrt(EQM(medias1,dados))
-            errotmp2 = math.sqrt(EQM(medias2,dados))
+            errotmp1 = chisquare(medias1, f_exp=dados)[0]
+            errotmp2 = chisquare(medias2, f_exp=dados)[0]
             if(errotmp1<errotmp):
                 while (errotmp1<errotmp):
                     errotmp = errotmp1
@@ -240,7 +229,7 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
                     tamanho_populacao = poptmp1
                     poptmp1 = max(minpop,tamanho_populacao - passopop)
                     medias1 = rodarede(tam_inicial, coeficiente,poptmp1,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
-                    errotmp1 = math.sqrt(EQM(medias1,dados))
+                    errotmp1 = chisquare(medias1, f_exp=dados)[0]
             elif(errotmp2<errotmp):
                 while (errotmp2<errotmp):
                     errotmp = errotmp2
@@ -248,7 +237,7 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
                     tamanho_populacao = poptmp2
                     poptmp2 = min(maxpop,tamanho_populacao + passopop)
                     medias2 = rodarede(tam_inicial, coeficiente,poptmp2,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)
-                    errotmp2 = math.sqrt(EQM(medias2,dados))
+                    errotmp2 = chisquare(medias2, f_exp=dados)[0]
                 
         
         if(errotmp<erro):
