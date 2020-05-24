@@ -47,9 +47,10 @@ def process_country(ct, datadict, curdate, paramp):
 	x = data['eDay'].values
 	y = data['accCases'].values
 	mdc = list()
-	fit.run_edo_model(x, y, ct, 6, data, 'CASES', 'Acc Infected', data_consolidated, mdc, curdate, 'SARS-COV-2-EDO-BR Model on cases')
+	tag = 'CASES'
+	fit.run_edo_model(x, y, ct, 6, data, tag, 'Acc Infected', data_consolidated, mdc, curdate, 'SARS-COV-2-EDO-BR Model on cases')
 	if len(mdc) == 1:
-		paramp.set_param.remote(ct,mdc[0])
+		paramp.set_param.remote(ct, tag, mdc[0])
 		model_consolidated.append(mdc[0])
 		
 	# Place holder for EDO model

@@ -47,8 +47,8 @@ class ParamProcessor(object):
                 f.write('\n')
         return
     
-    def set_param(self, key, param):
+    def set_param(self, key, tag, param):
         self.param_dict[key] = param
-        with open(f'log/{key}.json', 'w') as f:
+        with open(f'log/{key}-{tag}.json', 'w') as f:
             f.write(self.param_dict[key].params.dumps(cls=NpEncoder))
         return

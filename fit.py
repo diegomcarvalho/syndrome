@@ -54,7 +54,20 @@ def dump_report(filename, result, x, y, forecast_size, fsvg, model, ct, ylabel):
 		f.write(param_page(rname, table_info, table_stat, table_obs,fsvg))
 	return
 
-def get_edo_config(x, y, cur, tag):
+def get_edo_config(x, y, ct, cur, tag):
+
+	residual = edo.residual_edo_D if tag == 'CASES' else edo.residual_edo_M
+	ffunct = edo.eval_edo_D if tag == 'CASES' else edo.eval_edo_M
+	params = lm.Parameters()
+
+	memo_file = f'log/{ct}-{tag}.json'
+	if ct is not None and os.path.exists(memo_file):
+		with open(memo_file) as f:
+			buf = f.read()
+			params.loads(buf)
+
+		params.add('day', value=len(y), min=0, vary=False)
+		return params, residual, ffunct
 
 	pop = int(cur['popData2018'].iloc[-1])
 	gammaD = 0.14
@@ -66,7 +79,6 @@ def get_edo_config(x, y, cur, tag):
 	a = 1.2
 	i = 1.8
 
-	params = lm.Parameters()
 	params.add('beta', value=9.33E-08, min=0, max=1E-5)
 
 	params.add('theta', value=0.129598, min=0.1, max=0.16)
@@ -118,14 +130,11 @@ def get_edo_config(x, y, cur, tag):
 
 	params.add('R0', value=0, vary=False)
 
-	residual = edo.residual_edo_D if tag == 'CASES' else edo.residual_edo_M
-	ffunct = edo.eval_edo_D if tag == 'CASES' else edo.eval_edo_M
-
 	return params, residual, ffunct
 
 def fit_edo_shape(x, y, ct, cur, tag):
 
-	params, func, ffunc = get_edo_config(x, y, cur, tag)
+	params, func, ffunc = get_edo_config(x, y, ct, cur, tag)
 
 	minner = lm.Minimizer(func, params, fcn_args=(y, params))
 	result = minner.minimize()
@@ -413,7 +422,7 @@ def run_socnet_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_co
 
 	partition = len(y) // 4
 
-	forecast = fitrs3.previsaoredeslp(y, 40, 200, 400, 100, file1, file2, partition, y[-1] + 50, y[-1] * 10, 4, 6, 0.2, 0.7, 0, 101)
+	forecast = fitrs3.previsaoredeslp(y, 40, 200, 400, 100, file1, file2, partition, y[-1] + 50, y[-1] * 20, 4, 6, 0.2, 0.7, 0, 101)
 
 	if forecast is None:
 		data_consolidated.append('n.a.')
