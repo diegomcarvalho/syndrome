@@ -12,8 +12,8 @@ pop = {"SP": 45919049, "MG": 21168791, "RJ": 17264943, "BA": 14873064,
        "AC": 881935, "AP": 845731, "RR": 605761}
 
 names = {"SP": "Sao_Paulo", "MG": "Minas_Gerais", "RJ": "Rio_de_Janeiro", "BA": "Bahia",
-         "PR": "Parana", "RS": "Rio_Grande_do_Sul", "PE": "Pernanbuco", "CE": "Ceara",
-         "PA": "Para", "SC": "Santa_Catariana", "MA": "Maranhao", "GO": "Goias",
+         "PR": "Parana", "RS": "Rio_Grande_do_Sul", "PE": "Pernambuco", "CE": "Ceara",
+         "PA": "Para", "SC": "Santa_Catarina", "MA": "Maranhao", "GO": "Goias",
          "AM": "Amazonas", "ES": "Espirito_Santo", "PB": "Paraiba", "RN": "Rio_Grande_do_Norte",
          "MT": "Mato_Grosso", "AL": "Alagoas", "PI": "Piaui", "DF": "Distrito_Federal",
          "MS": "Mato_Grosso_do_Sul", "SE": "Sergipe", "RO": "Rondonia", "TO": "Tocantins",

@@ -54,6 +54,159 @@ def dump_report(filename, result, x, y, forecast_size, fsvg, model, ct, ylabel):
 		f.write(param_page(rname, table_info, table_stat, table_obs,fsvg))
 	return
 
+def fit_bell_shape(x, y, mod):
+	mod = mod()
+	pars = mod.guess(y, x=x)
+	result = mod.fit(y, pars, x=x)
+	return result, mod
+
+def gompertz(x, asymptote, displacement, step_center):
+	transform = 1.0 + x
+	c = m.log(m.log(2.0) / displacement) / step_center
+	return asymptote * np.exp(- displacement * np.exp(-c * transform))
+
+def find_fit_sigmoid(x, y):
+	model_gompertz = lm.models.Model(gompertz)
+	params_gompertz = lm.Parameters()
+	params_gompertz.add('asymptote', value=1E-3, min=1E-8)
+	params_gompertz.add('displacement', value=1E-3, min=1E-8)
+	params_gompertz.add('step_center', value=1E-3, min=1E-8)
+
+	result_gompertz = model_gompertz.fit(y, params_gompertz, x=x)
+
+	step_mod = StepModel(form='erf', prefix='step_')
+	line_mod = LinearModel(prefix='line_')
+
+	params_stln = line_mod.make_params(intercept=y.min(), slope=0)
+	params_stln += step_mod.guess(y, x=x, center=90)
+
+	model_stln = step_mod + line_mod
+	result_stln = model_stln.fit(y, params_stln, x=x)
+
+	ret_result = None
+	ret_model = None
+
+	if result_stln.chisqr < result_gompertz.chisqr:
+		ret_result = result_stln
+		ret_model = model_stln
+	else:
+		ret_result = result_gompertz
+		ret_model = model_gompertz
+
+	return ret_result, ret_model
+
+def find_fit_bell(x, y, ct, log=False):
+
+	ret_result = None
+	ret_model = None
+	current_min_chisqr = np.inf
+
+	old_list = [DampedOscillatorModel, MoffatModel, BreitWignerModel]
+
+	for m in [GaussianModel, LorentzianModel, VoigtModel, PseudoVoigtModel,  Pearson7Model, StudentsTModel, LognormalModel,  SkewedGaussianModel, SkewedVoigtModel, SplitLorentzianModel]:
+		#if log:
+			#loggingg.info(f'find_fit_bell: {mod}')
+
+		result, model = fit_bell_shape(x, y, m)
+
+		if result.success == False or result.chisqr > current_min_chisqr:
+			continue
+
+		ret_result = result
+		ret_model = model
+		current_min_chisqr = ret_result.chisqr
+
+	#if model_fit == None:
+		#loggingg.info(f'find_fit_bell: cannot fit for {ct}')
+
+	return ret_result, ret_model
+
+def run_model_bell(x, y, ct, id, ylabel, data_consolidated, model_consolidated, curdate, text):
+	rname = ct.replace('_', ' ')
+	fdata = f'gpdata/dat/{ct}-{id}.dat'
+	fgplot = f'gpdata/{ct}-{id}.gp'
+	fsvg = f'svg/{ct}-{id}.svg'
+	freport = f'report/{ct}-{id}.html'
+
+	result, model = find_fit_bell(x, y, ct)
+
+	if result == None:
+		data_consolidated.append('n.a.')
+		data_consolidated.append('n.a.')
+		dump_xy_dat(fdata,x,y)
+		dump_svg(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}', f'gpdata/dat/{ct}-{id}.dat', 2, f"{rname} data",
+					opt='colorsequence podo',
+					txt1='NO FIT AVAILABLE FOR THE CURRENT DATA', point=True)
+		#loggingg.info(f'run_model_bell: cannot fit deaths for {ct}')
+	else:
+		center = int(round(result.params['center'].value))
+		chisqr = result.chisqr
+
+		data_consolidated.append(center)
+		data_consolidated.append(chisqr)
+		model_consolidated.append(result)
+
+		dump_xyz_dat(fdata,x,y,result.best_fit)
+
+		dump_svg2D(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}',
+					fdata, 2, 3, f"{rname} data",
+					f'{text}',
+					opt='yrange [0<*:]',
+					txt1=f'Mid = {center} days',
+					txt2=f'𝛘² = {chisqr:9.2}')
+	dump_report(freport,result,x,y,7,fsvg,model,ct,ylabel)
+	return
+
+def run_model_sigmoid(x, y, ct, id, ylabel, data_consolidated, model_consolidated, curdate, text):
+	rname = ct.replace('_', ' ')
+	fdata = f'gpdata/dat/{ct}-{id}.dat'
+	fgplot = f'gpdata/{ct}-{id}.gp'
+	fsvg = f'svg/{ct}-{id}.svg'
+	freport = f'report/{ct}-{id}.html'
+
+	result, model = find_fit_sigmoid(x, y)
+
+	if result.success == False:
+		data_consolidated.append('n.a.')
+		data_consolidated.append('n.a.')
+
+		dump_xy_dat(fdata,x,y)
+		dump_svg(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}', fdata, 2, f"{rname} data",
+					opt='colorsequence podo',
+					txt1='NO FIT AVAILABLE FOR THE CURRENT DATA', point=True)
+		#loggingg.info(f'run_model_sigmoid: cannot fit sigmoid for {ct}')
+	else:
+		chisqr = result.chisqr
+		center = int(round(result.params['step_center'].value))
+
+		data_consolidated.append(center)
+		data_consolidated.append(chisqr)
+		model_consolidated.append(result)
+
+		dump_xyz_dat(fdata,x,y,result.best_fit)
+		dump_svg2D(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}',
+					fdata, 2, 3,
+					f"{rname} data",
+					f'{text}',
+					opt='yrange [0<*:]',
+					txt1=f'Mid = {center} days',
+					txt2=f'𝛘² = {chisqr:9.2}')
+
+	dump_report(freport,result,x,y,7,fsvg,model,ct,ylabel)
+	return
+
 def get_edo_config(x, y, ct, cur, tag):
 
 	residual = edo.residual_edo_D if tag == 'CASES' else edo.residual_edo_M
@@ -142,163 +295,6 @@ def fit_edo_shape(x, y, ct, cur, tag):
 	forecast = None if result.success == False else ffunc(result.params, 50)
 
 	return result, forecast
-
-def fit_bell_shape(x, y, mod):
-	mod = mod()
-	pars = mod.guess(y, x=x)
-	result = mod.fit(y, pars, x=x)
-	return result, mod
-
-
-def gompertz(x, asymptote, displacement, step_center):
-	transform = 1.0 + x
-	c = m.log(m.log(2.0) / displacement) / step_center
-	return asymptote * np.exp(- displacement * np.exp(-c * transform))
-
-def find_fit_sigmoid(x, y):
-	model_gompertz = lm.models.Model(gompertz)
-	params_gompertz = lm.Parameters()
-	params_gompertz.add('asymptote', value=1E-3, min=1E-8)
-	params_gompertz.add('displacement', value=1E-3, min=1E-8)
-	params_gompertz.add('step_center', value=1E-3, min=1E-8)
-
-	result_gompertz = model_gompertz.fit(y, params_gompertz, x=x)
-
-	step_mod = StepModel(form='erf', prefix='step_')
-	line_mod = LinearModel(prefix='line_')
-
-	params_stln = line_mod.make_params(intercept=y.min(), slope=0)
-	params_stln += step_mod.guess(y, x=x, center=90)
-
-	model_stln = step_mod + line_mod
-	result_stln = model_stln.fit(y, params_stln, x=x)
-
-	ret_result = None
-	ret_model = None
-
-	if result_stln.chisqr < result_gompertz.chisqr:
-		ret_result = result_stln
-		ret_model = model_stln
-	else:
-		ret_result = result_gompertz
-		ret_model = model_gompertz
-
-	return ret_result, ret_model
-
-def find_fit_bell(x, y, ct, log=False):
-
-	ret_result = None
-	ret_model = None
-	current_min_chisqr = np.inf
-
-	old_list = [DampedOscillatorModel, MoffatModel, BreitWignerModel]
-
-	for m in [GaussianModel, LorentzianModel, VoigtModel, PseudoVoigtModel,  Pearson7Model, StudentsTModel, LognormalModel,  SkewedGaussianModel, SkewedVoigtModel, SplitLorentzianModel]:
-		#if log:
-			#loggingg.info(f'find_fit_bell: {mod}')
-
-		result, model = fit_bell_shape(x, y, m)
-
-		if result.success == False or result.chisqr > current_min_chisqr:
-			continue
-
-		ret_result = result
-		ret_model = model
-		current_min_chisqr = ret_result.chisqr
-
-	#if model_fit == None:
-		#loggingg.info(f'find_fit_bell: cannot fit for {ct}')
-
-	return ret_result, ret_model
-
-
-def run_model_bell(x, y, ct, id, ylabel, data_consolidated, model_consolidated, curdate, text):
-	rname = ct.replace('_', ' ')
-	fdata = f'gpdata/dat/{ct}-{id}.dat'
-	fgplot = f'gpdata/{ct}-{id}.gp'
-	fsvg = f'svg/{ct}-{id}.svg'
-	freport = f'report/{ct}-{id}.html'
-
-	result, model = find_fit_bell(x, y, ct)
-
-	if result == None:
-		data_consolidated.append('n.a.')
-		data_consolidated.append('n.a.')
-		dump_xy_dat(fdata,x,y)
-		dump_svg(fgplot, fsvg,
-					f'{text} for {rname} on {curdate}',
-					'Days from the first infected',
-					f'{ylabel}', f'gpdata/dat/{ct}-{id}.dat', 2, f"{rname} data",
-					opt='colorsequence podo',
-					txt1='NO FIT AVAILABLE FOR THE CURRENT DATA', point=True)
-		#loggingg.info(f'run_model_bell: cannot fit deaths for {ct}')
-	else:
-		center = int(round(result.params['center'].value))
-		chisqr = result.chisqr
-
-		data_consolidated.append(center)
-		data_consolidated.append(chisqr)
-		model_consolidated.append(result)
-
-		dump_xyz_dat(fdata,x,y,result.best_fit)
-
-		dump_svg2D(fgplot, fsvg,
-					f'{text} for {rname} on {curdate}',
-					'Days from the first infected',
-					f'{ylabel}',
-					fdata, 2, 3, f"{rname} data",
-					f'{text}',
-					opt='yrange [0<*:]',
-					txt1=f'Mid = {center} days',
-					txt2=f'𝛘² = {chisqr:9.2}')
-	dump_report(freport,result,x,y,7,fsvg,model,ct,ylabel)
-	return
-
-
-def run_model_sigmoid(x, y, ct, id, ylabel, data_consolidated, model_consolidated, curdate, text):
-	rname = ct.replace('_', ' ')
-	fdata = f'gpdata/dat/{ct}-{id}.dat'
-	fgplot = f'gpdata/{ct}-{id}.gp'
-	fsvg = f'svg/{ct}-{id}.svg'
-	freport = f'report/{ct}-{id}.html'
-
-	result, model = find_fit_sigmoid(x, y)
-
-	if result.success == False:
-		data_consolidated.append('n.a.')
-		data_consolidated.append('n.a.')
-
-		dump_xy_dat(fdata,x,y)
-		dump_svg(fgplot, fsvg,
-					f'{text} for {rname} on {curdate}',
-					'Days from the first infected',
-					f'{ylabel}', fdata, 2, f"{rname} data",
-					opt='colorsequence podo',
-					txt1='NO FIT AVAILABLE FOR THE CURRENT DATA', point=True)
-		#loggingg.info(f'run_model_sigmoid: cannot fit sigmoid for {ct}')
-	else:
-		chisqr = result.chisqr
-		center = int(round(result.params['step_center'].value))
-
-		data_consolidated.append(center)
-		data_consolidated.append(chisqr)
-		model_consolidated.append(result)
-
-		dump_xyz_dat(fdata,x,y,result.best_fit)
-		dump_svg2D(fgplot, fsvg,
-					f'{text} for {rname} on {curdate}',
-					'Days from the first infected',
-					f'{ylabel}',
-					fdata, 2, 3,
-					f"{rname} data",
-					f'{text}',
-					opt='yrange [0<*:]',
-					txt1=f'Mid = {center} days',
-					txt2=f'𝛘² = {chisqr:9.2}')
-
-	dump_report(freport,result,x,y,7,fsvg,model,ct,ylabel)
-	return
-
 
 def run_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text):
 	rname = ct.replace('_', ' ')
