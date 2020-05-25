@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import datetime as dt
+import os
 
 pop = {"SP": 45919049, "MG": 21168791, "RJ": 17264943, "BA": 14873064,
        "PR": 11433957, "RS": 11377239, "PE": 9557071, "CE": 9132078,
@@ -17,7 +19,13 @@ names = {"SP": "Sao_Paulo", "MG": "Minas_Gerais", "RJ": "Rio_de_Janeiro", "BA": 
          "MS": "Mato_Grosso_do_Sul", "SE": "Sergipe", "RO": "Rondonia", "TO": "Tocantins",
          "AC": "Acre", "AP": "Amapa", "RR": "Roraima"}
 
-def process_CDCEU(workload, fetchdata=True):
+def brasilian_regions():
+	l = list(names.values())
+	l.append('Brasil')
+
+	return l
+
+def process_CDCEU(database, fetchdata=True):
 
 	if fetchdata:
 		df = pd.read_csv('https://opendata.ecdc.europa.eu/covid19/casedistribution/csv')
@@ -42,6 +50,7 @@ def process_CDCEU(workload, fetchdata=True):
 
 			curdate = f"{cur['year'].iloc[-1]:04}-{cur['month'].iloc[-1]:02}-{cur['day'].iloc[-1]:02}"
 			pop = int(cur['popData2018'].iloc[-1])
+			accases = int(cur['accCases'].iloc[-1])
 		except:
 			continue
 
@@ -58,11 +67,11 @@ def process_CDCEU(workload, fetchdata=True):
 		cur['newcasesroll'] = cur['cases'].rolling(7).sum()
 		cur['newdeathsroll'] = cur['deaths'].rolling(7).sum()
 
-		workload.append((country_name, cur.to_dict(), curdate))
+		database[country_name] = { 'DATE': curdate, 'DATA': cur.to_dict(), 'ACCASES': accases, 'POPULATION': pop }
 	return
 
 
-def process_Brazil_MS(df, workload):
+def process_Brazil_MS(df, database):
 	state = df[(df['regiao'] == 'Brasil') & (df['populacaoTCU2019'] == 210147125)]
 	state = state.sort_values(['data'])
 	data = list(np.diff(state.casosAcumulado, prepend=[0]))
@@ -84,6 +93,7 @@ def process_Brazil_MS(df, workload):
 
 	curdate = f"{cur['data'].iloc[-1]}".replace('00:00:00', '')
 	popdata = int(cur['popData2018'].iloc[-1])
+	accases = int(cur['accCases'].iloc[-1])
 
 	# Reset the index, so index + 1 is the epidemilogical day
 	cur = cur.reset_index()
@@ -94,21 +104,39 @@ def process_Brazil_MS(df, workload):
 	cur['newcasesroll'] = cur['cases'].rolling(7).sum()
 	cur['newdeathsroll'] = cur['deaths'].rolling(7).sum()
 
-	workload.append(('Brasil', cur.to_dict(), curdate))
-	
+	database['Brasil'] = { 'DATE': curdate, 'DATA': cur.to_dict(), 'ACCASES': accases, 'POPULATION': popdata }
+
 	return
 
-def process_MS(workload, fetchdata=True):
+def process_MS(database, fetchdata=True):
 
-	if fetchdata:
-		df = pd.read_excel('data/DT_PAINEL_COVIDBR_20200522.xlsx')
-		df.to_csv('data/MS.csv')
-	else:
+	month = {'01': 'jan', '02': 'fev', '03': 'mar',
+	         '04': 'abr', '05': 'mai', '06': 'jun',
+		     '07': 'jul', '08': 'ago', '09': 'set',
+			 '10': 'out', '11': 'nov', '12': 'dec'}
+
+	df = None
+	today = dt.date.today()
+	for backday in range(5):
+		day = today - dt.timedelta(days=backday)
+		syear =day.strftime('%Y')
+		smonth =day.strftime('%m')
+		sday =day.strftime('%d')
+		filename = f'data/DT_PAINEL_COVIDBR_{syear}{smonth}{sday}.xlsx'
+		if  os.path.exists(filename):
+			df = pd.read_excel(filename)
+			break
+		filename = f'data/HIST_PAINEL_COVIDBR_{sday}{month[smonth]}{syear}.xlsx'
+		if  os.path.exists(filename):
+			df = pd.read_excel(filename)
+			break
+
+	if df is None:
 		df = pd.read_csv('data/MS.csv')
 
 	df['data'] = pd.to_datetime(df['data'], format='%Y-%m-%d')
 
-	process_Brazil_MS(df, workload)
+	process_Brazil_MS(df, database)
 
 	for ct in pop.keys():
 		state = df[ (df['estado'] == ct) & (df['populacaoTCU2019'] == pop[ct]) ]
@@ -132,6 +160,7 @@ def process_MS(workload, fetchdata=True):
 
 		curdate = f"{cur['data'].iloc[-1]}".replace('00:00:00', '')
 		popdata = int(cur['popData2018'].iloc[-1])
+		accases = int(cur['accCases'].iloc[-1])
 
 		# Check if there is any data...
 		if len(cur) <= 5 or cur['cases'].sum() < 100:
@@ -147,6 +176,15 @@ def process_MS(workload, fetchdata=True):
 		cur['newcasesroll'] = cur['cases'].rolling(7).sum()
 		cur['newdeathsroll'] = cur['deaths'].rolling(7).sum()
 
-		workload.append((names[ct], cur.to_dict(), curdate))
+		database[names[ct]] = { 'DATE': curdate, 'DATA': cur.to_dict(), 'ACCASES': accases, 'POPULATION': popdata }
 	return
+
+def build_database(fetchdata=True):
+	global_database = dict()
+
+	process_MS(global_database, fetchdata)
+	process_CDCEU(global_database, fetchdata)
+
+	return global_database
+
 

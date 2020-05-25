@@ -15,17 +15,18 @@ def main():
 
     paramp = pp.ParamProcessor.remote()
 
-    workload = list()
-
-    dt.process_MS(workload, fetchdata=True)
-    dt.process_CDCEU(workload, fetchdata=True)
+    workload = dt.build_database()
 
     workerlist = list()
 
-    for i in workload:
-        print(f'Submiting {i[0]}')
-        wid = cp.process_country.remote(i[0], i[1], i[2], paramp)
-        workerlist.append(wid)
+    filter_list = dt.brasilian_regions()
+    filter_list = workload.keys()
+
+    for ct, data in sorted(workload.items(), key=lambda x: x[1]['ACCASES']):
+        if ct in filter_list:
+            print(f'Submiting {ct}')
+            wid = cp.process_country.remote(ct, data['DATA'], data['DATE'], paramp)
+            workerlist.append(wid)
     
     screen = curses.initscr()
     with open('log/processed.log', 'w') as f:
