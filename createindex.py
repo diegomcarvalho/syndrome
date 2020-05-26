@@ -3,8 +3,8 @@ import sys
 import os
 
 BR_states = ["Sao_Paulo", "Minas_Gerais",  "Rio_de_Janeiro", "Bahia",
-         "Parana", "Rio_Grande_do_Sul",  "Pernanbuco",  "Ceara",
-         "Para",  "Santa_Catariana",  "Maranhao",  "Goias",
+         "Parana", "Rio_Grande_do_Sul",  "Pernambuco",  "Ceara",
+         "Para",  "Santa_Catarina",  "Maranhao",  "Goias",
          "Amazonas", "Espirito_Santo",  "Paraiba",  "Rio_Grande_do_Norte",
          "Mato_Grosso", "Alagoas","Piaui", "Distrito_Federal",
          "Mato_Grosso_do_Sul",  "Sergipe",  "Rondonia",  "Tocantins",
@@ -56,8 +56,9 @@ for i in range(0, len(BR_states), 5):
 
 
 l = 5 - len(W_regions) % 5
-for i in range(l):
-	W_regions.append('Brazil')
+if l != 5:
+	for i in range(l):
+		W_regions.append('Brazil')
 
 for i in range(11):
 	line = f.readline()

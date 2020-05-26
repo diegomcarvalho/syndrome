@@ -8,11 +8,11 @@ import numpy as np
 import pandas as pd
 import ray
 from lmfit.models import (BreitWignerModel, DampedOscillatorModel,
-                          GaussianModel, LinearModel, LognormalModel,
-                          LorentzianModel, MoffatModel, Pearson7Model,
-                          PseudoVoigtModel, SkewedGaussianModel,
-                          SkewedVoigtModel, SplitLorentzianModel, StepModel,
-                          StudentsTModel, VoigtModel)
+						  GaussianModel, LinearModel, LognormalModel,
+						  LorentzianModel, MoffatModel, Pearson7Model,
+						  PseudoVoigtModel, SkewedGaussianModel,
+						  SkewedVoigtModel, SplitLorentzianModel, StepModel,
+						  StudentsTModel, VoigtModel)
 
 import edocovid as edo
 from htmltemplate import param_page
@@ -213,66 +213,44 @@ def get_edo_config(x, y, ct, cur, tag):
 	ffunct = edo.eval_edo_D if tag == 'CASES' else edo.eval_edo_M
 	params = lm.Parameters()
 
-	memo_file = f'log/{ct}-{tag}.json'
+	memo_file = f'edomemory/{ct}-{tag}.json'
 	if ct is not None and os.path.exists(memo_file):
-		with open(memo_file) as f:
-			buf = f.read()
-			params.loads(buf)
+		try:
+			with open(memo_file, 'r') as f:
+				params.load(f)
 
-		params.add('day', value=len(y), min=0, vary=False)
-		return params, residual, ffunct
+			pop = int(cur['popData2018'].iloc[-1])
+			a = 1.2
+			i = 1.8
+			gammaD = 0.14
+			death_rate = cur['accDeaths'].iloc[-1] / cur['accCases'].iloc[-1]  # 0.035
+			dD = gammaD * death_rate / (1 - death_rate)
+
+			params.add('lambda0', value=1/len(y), vary=False)
+			params.add('dD', expr=f'gammaD*{death_rate}/(1-{death_rate})')
+			params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop)
+			params.add('Q0', value=0.6*y[-1], vary=False, min=0)
+			params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0)
+			params.add('A0', value=a*y[0], vary=False, min=0)
+			params.add('I0', value=i*y[0], vary=False, min=0)
+			params.add('day', value=len(y), min=0, vary=False)
+
+			return params, residual, ffunct
+		except Exception as e:
+			print(f'get_edo_config: json file {memo_file} is corrupted.')
 
 	pop = int(cur['popData2018'].iloc[-1])
+	a = 1.2
+	i = 1.8
 	gammaD = 0.14
 	death_rate = cur['accDeaths'].iloc[-1] / cur['accCases'].iloc[-1]  # 0.035
 	dD = gammaD * death_rate / (1 - death_rate)
-	
-	# D0 = y[0]
-	# E0 = A0 + I0
-	a = 1.2
-	i = 1.8
-
-	params.add('beta', value=9.33E-08, min=0, max=1E-5)
-
-	params.add('theta', value=0.129598, min=0.1, max=0.16)
-	params.add('p', value=0.15, min=0.001, max=0.33)
-
-	# Ver para rodar para as outras regiões
-	params.add('lambda0', value=1/len(y), vary=False)
-	params.add('sigma', value=1/7, min=0, vary=False)
-	params.add('rho', value=0.12, min=0, vary=False)
-
-	params.add('epsilonA', value=0, min=0, max=0.2)
-	params.add('epsilonI', value=0.2, min=0.1, max=0.4)
-
-	#params.add('cA', value=1.25, min=1.0, max=1.5)
-	#params.add('cI', value=0.75, min=0.5, max=1.0)
-	#params.add('gammaD', value=0.14, min=0.10, max=0.15)
-	#params.add('gammaA', expr='cA*gammaD')
-	#params.add('gammaI', expr='cI*gammaD')
-
-	params.add('gammaA',value=0.13, min=0.1, max=0.15)
-	params.add('gammaI',value=0.1, min=0, vary=False)
+	params.add('lambda0', value=1 / len(y), vary=False)
 	params.add('gammaD', value=0.12, min=0.1, max=0.15)
-
-	params.add('cD', value=1.4, min=1.1, max=1.7)
 	params.add('dD', expr=f'gammaD*{death_rate}/(1-{death_rate})')
-	params.add('dI', expr='cD*dD')
-	#params.add('dI', expr=f'1.3*gammaD')
-
-	params.add('delta', value=0.0001, min=0, max=1.0)
-	params.add('day', value=len(y), min=0, vary=False)
-
 	params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop)
-
 	params.add('Q0', value=0.6*y[-1], vary=False, min=0)
-	# D0 = y[0]
-	# E0 = A0 + I0
-	a = 1.2
-	i = 1.8
-
 	params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0)
-
 	params.add('A0', value=a*y[0], vary=False, min=0)
 	params.add('I0', value=i*y[0], vary=False, min=0)
 
@@ -280,6 +258,26 @@ def get_edo_config(x, y, ct, cur, tag):
 		params.add('D0', value=y[0], vary=False, min=0)
 	else:
 		params.add('D0', value=y[0], vary=False,  min=0.75 * y[0], max=1.25*y[0])
+
+	params.add('beta', value=9.33E-08, min=0, max=1E-5)
+
+	params.add('theta', value=0.129598, min=0.1, max=0.16)
+	params.add('p', value=0.15, min=0.001, max=0.33)
+
+	params.add('sigma', value=1/7, min=0, vary=False)
+	params.add('rho', value=0.12, min=0, vary=False)
+
+	params.add('epsilonA', value=0, min=0, max=0.2)
+	params.add('epsilonI', value=0.2, min=0.1, max=0.4)
+
+	params.add('gammaA',value=0.13, min=0.1, max=0.15)
+	params.add('gammaI',value=0.1, min=0, vary=False)
+
+	params.add('cD', value=1.4, min=1.1, max=1.7)
+	params.add('dI', expr='cD*dD')
+
+	params.add('delta', value=0.0001, min=0, max=1.0)
+	params.add('day', value=len(y), min=0, vary=False)
 
 	params.add('R0', value=0, vary=False)
 
@@ -292,9 +290,82 @@ def fit_edo_shape(x, y, ct, cur, tag):
 	minner = lm.Minimizer(func, params, fcn_args=(y, params))
 	result = minner.minimize()
 
-	forecast = None if result.success == False else ffunc(result.params, 50)
+	forecast = None if result.success == False else ffunc(result.params, 7)
 
 	return result, forecast
+
+def copy_edo_shape(x, y, ct, cur, tag1, model):
+
+	tag2 = 'DEATHS' if tag1 == 'CASES' else 'CASES'
+	params1, func1, ffunc1 = get_edo_config(x, y, ct, cur, tag1)
+	params3, func2, ffunc2 = get_edo_config(x, y, ct, cur, tag2)
+
+	if model is None:
+		params2 = params3
+	else:
+		params2 = model.params
+
+	minner = lm.Minimizer(func1, params2, fcn_args=(y, params2))
+	result = minner.minimize()
+
+	forecast = None if result.success == False else ffunc1(result.params, 7)
+
+	return result, forecast
+
+
+def copy_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text):
+	rname = ct.replace('_', ' ')
+	fdata = f'gpdata/dat/{ct}-{id}.dat'
+	fgplot = f'gpdata/{ct}-{id}.gp'
+	fsvg = f'svg/{ct}-{id}.svg'
+	freport = f'report/{ct}-{id}.html'
+
+	model, forecast = copy_edo_shape(x, y, ct, cur, tag, model_consolidated[0])
+
+	if model.success == False:
+		data_consolidated.append('n.a.')
+		model_consolidated.append(None)
+
+		dump_xy_dat(fdata,x,y)
+		dump_svg(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}', fdata, 2, f"{rname} data",
+					opt='colorsequence podo',
+					txt1='NO FIT AVAILABLE FOR THE CURRENT DATA', point=True)
+		#loggingg.info(f'run_edo_model: cannot fit edo for {ct}')
+	else:
+		chisqr = model.chisqr
+		data_consolidated.append(chisqr)
+		model_consolidated.append(model)
+		nx = x if forecast is None else np.arange(len(forecast))
+		dump_xyz_dat(fdata, nx, y, forecast)
+		dump_svg2D(fgplot, fsvg,
+					f'{text} for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}',
+					fdata, 2, 3,
+					f"{rname} data",
+					f'{text}',
+					opt='yrange [0<*:]',
+					txt1=f'EDO',
+					txt2=f'𝛘² = {chisqr:9.2}')
+
+	if model != None:		
+		with open(freport, 'w') as f:
+			table_info = f'<tr><td>Success status</td><td>{model.success}</td></tr>'
+			table_info += f'<tr><td>Abort status</td><td>{model.aborted}</td></tr>'
+			table_info += f'<tr><td>Fit message</td><td>{model.message}</td></tr>'
+			table_stat = '<tr> <td>' + model._repr_html_() + '</td></tr>'
+			table_obs = f'<tr><th>Days from the first infected</th><th>{ylabel}</th><th>Model {ylabel}</th></tr>'
+			if forecast != None:
+				for i, j, k in itertools.zip_longest(nx, y, forecast, fillvalue='nan'):
+					table_obs += f'<tr><td>{i}</td><td>{j}</td><td>{k:.0f}</td></tr>'
+			else:
+				for i, j in itertools.zip_longest(x, y, fillvalue='nan'):
+					table_obs += f'<tr><td>{i}</td><td>{j}</td><td>n.a.</td></tr>'
+			f.write(param_page(rname, table_info, table_stat, table_obs,fsvg))
+	return
 
 def run_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text):
 	rname = ct.replace('_', ' ')
@@ -307,7 +378,7 @@ def run_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_conso
 
 	if model.success == False:
 		data_consolidated.append('n.a.')
-		data_consolidated.append('n.a.')
+		model_consolidated.append(None)
 
 		dump_xy_dat(fdata,x,y)
 		dump_svg(fgplot, fsvg,
@@ -388,18 +459,18 @@ def get_model_socnet(ct, id, curdate):
 	rname = ct.replace('_', ' ')
 	if os.path.exists(fdata):
 		dump_svg2D(fgplot, fsvg,
-                    f'SARS-COV-2-SOCNET Model for {rname} on {curdate}',
-            		'Days from the first infected',
-            		f'{ylabel}',
-            		fdata, 2, 3,
-            		f"{rname} data",
-                    f'SARS-COV-2-SOCNET Model',
-            		opt='yrange [0<*:]',
-            		txt1=f'SOCNET',
-            		txt2=f'𝛘² = n.a.')
+					f'SARS-COV-2-SOCNET Model for {rname} on {curdate}',
+					'Days from the first infected',
+					f'{ylabel}',
+					fdata, 2, 3,
+					f"{rname} data",
+					f'SARS-COV-2-SOCNET Model',
+					opt='yrange [0<*:]',
+					txt1=f'SOCNET',
+					txt2=f'𝛘² = n.a.')
 	else:
 		dump_svg_ph(fgplot, fsvg,
-                    f'SARS-COV-2-SOCNET Model for {rname} on {curdate}',
+					f'SARS-COV-2-SOCNET Model for {rname} on {curdate}',
 					'Days from the first infected', 'Acc Infected',
 					txt1='NO MODE AVAILABLE FOR THE CURRENT DATA')
 	return 
@@ -418,7 +489,7 @@ def run_socnet_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_co
 
 	partition = len(y) // 4
 
-	forecast = fitrs3.previsaoredeslp(y, 40, 200, 400, 100, file1, file2, partition, y[-1] + 50, y[-1] * 20, 4, 6, 0.2, 0.7, 0, 101)
+	forecast = fitrs3.previsaoredeslp(y, 7, 200, 400, 100, file1, file2, partition, y[-1] + 50, y[-1] * 20, 4, 6, 0.2, 0.7, 0, 101)
 
 	if forecast is None:
 		data_consolidated.append('n.a.')
@@ -463,3 +534,16 @@ def run_socnet_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_co
 					table_obs += f'<tr><td>{i}</td><td>{j}</td><td>n.a.</td></tr>'
 			f.write(param_page(rname, table_info, table_stat, table_obs,fsvg))
 	return
+
+def run_data(x, y, ct, id, ylabel, curdate, text, txt1=''):
+	rname = ct.replace('_', ' ')
+	fdata = f'gpdata/dat/{ct}-{id}.dat'
+	fgplot = f'gpdata/{ct}-{id}.gp'
+	fsvg = f'svg/{ct}-{id}.svg'
+	dump_xy_dat(fdata,x,y)
+	dump_svg(fgplot, fsvg,
+				f'{text} for {rname} on {curdate}',
+				'Days from the first infected',
+				f'{ylabel}', fdata, 2, f"{rname} data",
+				opt='colorsequence podo',
+				txt1=txt1, point=True)

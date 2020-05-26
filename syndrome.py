@@ -19,8 +19,9 @@ def main():
 
     workerlist = list()
 
-    filter_list = dt.brasilian_regions()
-    filter_list = workload.keys()
+    filter_list = ['Brasil', 'Santa_Catarina','Alagoas', 'Minas_Gerais', 'Espirito_Santo', 'Tocantins', 'Afghanistan', 'Distrito_Federal']
+    #filter_list = dt.brasilian_regions()
+    #filter_list = workload.keys()
 
     for ct, data in sorted(workload.items(), key=lambda x: x[1]['ACCASES']):
         if ct in filter_list:

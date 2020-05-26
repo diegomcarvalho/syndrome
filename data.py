@@ -125,10 +125,12 @@ def process_MS(database, fetchdata=True):
 		filename = f'data/DT_PAINEL_COVIDBR_{syear}{smonth}{sday}.xlsx'
 		if  os.path.exists(filename):
 			df = pd.read_excel(filename)
+			print(f'process_MS: read {filename}')
 			break
 		filename = f'data/HIST_PAINEL_COVIDBR_{sday}{month[smonth]}{syear}.xlsx'
 		if  os.path.exists(filename):
 			df = pd.read_excel(filename)
+			print(f'process_MS: read {filename}')
 			break
 
 	if df is None:

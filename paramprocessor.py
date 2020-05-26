@@ -46,7 +46,16 @@ class ParamProcessor(object):
                     f.write(f', {val}')
                 f.write('\n')
         return
-    
+
+    def get_param(self, key, tag):
+        try:
+            with open(f'edomemory/{key}-{tag}.json', 'r') as f:
+                p = lm.Parameters()
+                self.param_dict[key] = p.load(f)
+        except:
+            return None
+        return self.param_dict[key]
+
     def set_param(self, key, tag, param):
         self.param_dict[key] = param
         with open(f'log/{key}-{tag}.json', 'w') as f:
