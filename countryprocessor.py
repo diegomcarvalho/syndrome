@@ -6,7 +6,7 @@ import ray
 import fit
 
 @ray.remote(num_cpus=0.9)
-def process_country(ct, datadict, curdate, paramp, what_to_do):
+def process_country(ct, datadict, curdate, paramp, program):
 
 	data = pd.DataFrame(datadict)
 	data_consolidated = [ct]
@@ -15,49 +15,49 @@ def process_country(ct, datadict, curdate, paramp, what_to_do):
 	# cases fit
 	# Fit on cases per day
 	id = 0
-	if id in what_to_do:
+	if id in program:
 		x = data['eDay'].values
 		y = data['cases'].values
 		fit.run_model_bell(x, y, ct, id, 'Infected', data_consolidated, model_consolidated, curdate, 'Regression on Cases')
 
 	# Fit on accumulated cases per day
 	id = 1
-	if id in what_to_do:
+	if id in program:
 		x = data['eDay'].values
 		y = data['accCases'].values
 		fit.run_model_sigmoid(x, y, ct, id, 'Acc Infected', data_consolidated, model_consolidated, curdate, 'Regression on accumulated cases')
 
 	# Draw 7-rolling average
 	id = 2
-	if id in what_to_do:
+	if id in program:
 		x = data['accCases'].values
 		rla = data['newcasesroll'].values
 		fit.run_rolling_average(x, rla, ct, id, 7, curdate, 'cases')
 
 	# Fit on deaths per day
 	id = 3
-	if id in what_to_do:
+	if id in program:
 		x = data['eDay'].values
 		y = data['deaths'].values
 		fit.run_model_bell(x, y, ct, id, 'Deaths', data_consolidated, model_consolidated, curdate, 'Regression on deaths')
 
 	# Fit on accumulated cases per day
 	id = 4
-	if id in what_to_do:
+	if id in program:
 		x = data['eDay'].values
 		y = data['accDeaths'].values
 		fit.run_model_sigmoid(x, y, ct, id, 'Acc deaths', data_consolidated, model_consolidated, curdate, 'Regression on accumulated deaths')
 
 	# Draw 7-rolling average
 	id = 5
-	if id in what_to_do:
+	if id in program:
 		x = data['accDeaths'].values
 		rla = data['newdeathsroll'].values
 		fit.run_rolling_average(x, rla, ct, id, 7, curdate, 'deaths')
 
 	# Place holder for EDO model
 	id = 6
-	if id in what_to_do:
+	if id in program:
 		x = data['eDay'].values
 		y = data['accCases'].values
 		mdc = list()
@@ -76,14 +76,16 @@ def process_country(ct, datadict, curdate, paramp, what_to_do):
 	# Place holder for SOCNET model
 	#fit.get_model_socnet(ct, 8, curdate)
 	id = 8
-	if id in what_to_do:
+	if id in program:
 		x = data['eDay'].values
 		y = data['accCases'].values
 		fit.run_socnet_model(x, y, ct, id, data, 'CASES', 'Acc Infected', data_consolidated, mdc, curdate, 'SARS-COV-2-SOCNET-BR Model on cases')
 
-	x = data['eDay'].values
-	y = data['accCases'].values
-	fit.run_data(x, y, ct, 9, 'Acc Infected', curdate, 'Current data', txt1='Current Data')
+	id = 9
+	if id in program:
+		x = data['eDay'].values
+		y = data['accCases'].values
+		fit.run_data(x, y, ct, 9, 'Acc Infected', curdate, 'Current data', txt1='Current Data')
 
 	with open(f'log/{ct}.dat', 'w') as f:
 		f.write('process_country')

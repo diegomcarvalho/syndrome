@@ -19,14 +19,14 @@ def main():
 
     workerlist = list()
 
-    filter_list = ['Brasil', 'Santa_Catarina','Alagoas', 'Minas_Gerais', 'Espirito_Santo', 'Tocantins', 'Afghanistan', 'Distrito_Federal']
+    #filter_list = [ 'Albania', 'Austria', 'Australia', 'Bahrain']
     #filter_list = dt.brasilian_regions()
-    #filter_list = workload.keys()
+    filter_list = workload.keys()
 
     for ct, data in sorted(workload.items(), key=lambda x: x[1]['ACCASES']):
         if ct in filter_list:
             print(f'Submiting {ct}')
-            wid = cp.process_country.remote(ct, data['DATA'], data['DATE'], paramp)
+            wid = cp.process_country.remote(ct, data['DATA'], data['DATE'], paramp, [x for x in range(9)])
             workerlist.append(wid)
     
     screen = curses.initscr()
