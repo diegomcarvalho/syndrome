@@ -5,7 +5,7 @@ import os
 import ray
 import fit
 
-@ray.remote(num_cpus=0.9)
+@ray.remote(num_cpus=1)
 def process_country(ct, datadict, curdate, paramp, program):
 
 	data = pd.DataFrame(datadict)
@@ -62,15 +62,15 @@ def process_country(ct, datadict, curdate, paramp, program):
 		y = data['accCases'].values
 		mdc = list()
 		tag = 'CASES'
-		fit.run_edo_model(x, y, ct, id, data, tag, 'Acc Infected', data_consolidated, mdc, curdate, 'SARS-COV-2-EDO-BR Model on cases')
+		fit.run_edo_model(x, y, ct, id, data, tag, 'Acc Infected', data_consolidated, mdc, curdate, 'SARS-COV-2-EDO-BR Model on cases', paramp)
 		model_consolidated.append(mdc[0])
 		if mdc[0] is not None:
-			paramp.set_param.remote(ct, tag, mdc[0])
+			paramp.set_param.remote(ct, tag, mdc[0].params)
 		
 		# Place holder for EDO model
 		x = data['eDay'].values
 		y = data['accDeaths'].values
-		fit.copy_edo_model(x, y, ct, id+1, data, 'DEATHS', 'Acc deaths', data_consolidated, mdc, curdate, 'SARS-COV-2-EDO-BR Model on deaths')
+		fit.copy_edo_model(x, y, ct, id+1, data, 'DEATHS', 'Acc deaths', data_consolidated, mdc, curdate, 'SARS-COV-2-EDO-BR Model on deaths', paramp)
 		model_consolidated.append(mdc[1])
 
 	# Place holder for SOCNET model

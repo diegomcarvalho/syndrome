@@ -167,6 +167,9 @@ def adaptavalores(dados_completos,pos_inicial,pos_final,numsequencias,numrevisao
         parcelaquarentena = parcelaquarentena_min + random.random() * (parcelaquarentena_max - parcelaquarentena_min)          # sorteio - limites (0,1)
         coeficiente = coeficiente_min + random.random() * (coeficiente_max - coeficiente_min)           # sorteio - limites (3.5-5.5)
         tamanho_populacao = random.randint(tamanho_populacao_min, tamanho_populacao_max)
+        # Bacalho...
+        if pacientes_recuperados_min > pacientes_recuperados_max:
+            pacientes_recuperados_min, pacientes_recuperados_max = pacientes_recuperados_max, pacientes_recuperados_min
         pacientes_recuperados = random.randint(pacientes_recuperados_min, pacientes_recuperados_max)
 
         medias = p2rodarede(tam_inicial, coeficiente, tamanho_populacao,parcelaquarentena,max_quarentena,pacientes_recuperados,tempo,numsequencias)

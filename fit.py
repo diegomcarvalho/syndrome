@@ -207,37 +207,11 @@ def run_model_sigmoid(x, y, ct, id, ylabel, data_consolidated, model_consolidate
 	dump_report(freport,result,x,y,7,fsvg,model,ct,ylabel)
 	return
 
-def get_edo_config(x, y, ct, cur, tag):
+def get_edo_config(x, y, ct, cur, tag, paramp):
 
 	residual = edo.residual_edo_D if tag == 'CASES' else edo.residual_edo_M
 	ffunct = edo.eval_edo_D if tag == 'CASES' else edo.eval_edo_M
-	params = lm.Parameters()
-
-	memo_file = f'edomemory/{ct}-{tag}.json'
-	if ct is not None and os.path.exists(memo_file):
-		try:
-			with open(memo_file, 'r') as f:
-				params.load(f)
-
-			pop = int(cur['popData2018'].iloc[-1])
-			a = 1.2
-			i = 1.8
-			gammaD = 0.14
-			death_rate = cur['accDeaths'].iloc[-1] / cur['accCases'].iloc[-1]  # 0.035
-			dD = gammaD * death_rate / (1 - death_rate)
-
-			params.add('lambda0', value=1/len(y), vary=False)
-			params.add('dD', expr=f'gammaD*{death_rate}/(1-{death_rate})')
-			params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop)
-			params.add('Q0', value=0.6*y[-1], vary=False, min=0)
-			params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0)
-			params.add('A0', value=a*y[0], vary=False, min=0)
-			params.add('I0', value=i*y[0], vary=False, min=0)
-			params.add('day', value=len(y), min=0, vary=False)
-
-			return params, residual, ffunct
-		except Exception as e:
-			print(f'get_edo_config: json file {memo_file} is corrupted.')
+	future = paramp.get_param.remote(ct, tag)
 
 	pop = int(cur['popData2018'].iloc[-1])
 	a = 1.2
@@ -245,47 +219,63 @@ def get_edo_config(x, y, ct, cur, tag):
 	gammaD = 0.14
 	death_rate = cur['accDeaths'].iloc[-1] / cur['accCases'].iloc[-1]  # 0.035
 	dD = gammaD * death_rate / (1 - death_rate)
-	params.add('lambda0', value=1 / len(y), vary=False)
-	params.add('gammaD', value=0.12, min=0.1, max=0.15)
-	params.add('dD', expr=f'gammaD*{death_rate}/(1-{death_rate})')
-	params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop)
-	params.add('Q0', value=0.6*y[-1], vary=False, min=0)
-	params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0)
-	params.add('A0', value=a*y[0], vary=False, min=0)
-	params.add('I0', value=i*y[0], vary=False, min=0)
+
+	params = ray.get(future)
+	
+	if len(params.items()) == 0:
+		params = lm.Parameters()
+		params.add('beta', value=9.33E-08, min=0, max=1E-5)
+
+		params.add('theta', value=0.129598, min=0.1, max=0.16)
+		params.add('p', value=0.15, min=0.001, max=0.33)
+
+		params.add('sigma', value=1/7, min=0, vary=False)
+		params.add('rho', value=0.12, min=0, vary=False)
+
+		params.add('epsilonA', value=0, min=0, max=0.2)
+		params.add('epsilonI', value=0.2, min=0.1, max=0.4)
+
+		params.add('lambda0', value=1 / len(y), vary=False)
+
+		params.add('gammaA',value=0.13, min=0.1, max=0.15)
+		params.add('gammaI',value=0.1, min=0, vary=False)
+		params.add('gammaD', value=0.12, min=0.1, max=0.15)
+
+		params.add('cD', value=1.4, min=1.1, max=1.7)
+		params.add('dD', expr=f'gammaD*{death_rate}/(1-{death_rate})')
+		params.add('dI', expr='cD*dD')
+
+		params.add('delta', value=0.0001, min=0, max=1.0)
+
+		params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop)
+		params.add('R0', value=0, vary=False)
+		params.add('Q0', value=0.6*y[-1], vary=False, min=0)
+		params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0)
+		params.add('A0', value=a*y[0], vary=False, min=0)
+		params.add('I0', value=i*y[0], vary=False, min=0)
+
+		params.add('day', value=len(y), min=0, vary=False)
+
+	else:
+		params.add('lambda0', value=1/len(y), vary=False)
+		params.add('dD', expr=f'gammaD*{death_rate}/(1-{death_rate})')
+		params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop)
+		params.add('Q0', value=0.6*y[-1], vary=False, min=0)
+		params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0)
+		params.add('A0', value=a*y[0], vary=False, min=0)
+		params.add('I0', value=i*y[0], vary=False, min=0)
+		params.add('day', value=len(y), min=0, vary=False)
 
 	if y[0] < 5:
 		params.add('D0', value=y[0], vary=False, min=0)
 	else:
 		params.add('D0', value=y[0], vary=False,  min=0.75 * y[0], max=1.25*y[0])
 
-	params.add('beta', value=9.33E-08, min=0, max=1E-5)
-
-	params.add('theta', value=0.129598, min=0.1, max=0.16)
-	params.add('p', value=0.15, min=0.001, max=0.33)
-
-	params.add('sigma', value=1/7, min=0, vary=False)
-	params.add('rho', value=0.12, min=0, vary=False)
-
-	params.add('epsilonA', value=0, min=0, max=0.2)
-	params.add('epsilonI', value=0.2, min=0.1, max=0.4)
-
-	params.add('gammaA',value=0.13, min=0.1, max=0.15)
-	params.add('gammaI',value=0.1, min=0, vary=False)
-
-	params.add('cD', value=1.4, min=1.1, max=1.7)
-	params.add('dI', expr='cD*dD')
-
-	params.add('delta', value=0.0001, min=0, max=1.0)
-	params.add('day', value=len(y), min=0, vary=False)
-
-	params.add('R0', value=0, vary=False)
-
 	return params, residual, ffunct
 
-def fit_edo_shape(x, y, ct, cur, tag):
+def fit_edo_shape(x, y, ct, cur, tag, paramp):
 
-	params, func, ffunc = get_edo_config(x, y, ct, cur, tag)
+	params, func, ffunc = get_edo_config(x, y, ct, cur, tag, paramp)
 
 	minner = lm.Minimizer(func, params, fcn_args=(y, params))
 	result = minner.minimize(max_nfev=35000, ftol=1.49012e-09, xtol=1.49012e-09)
@@ -294,11 +284,11 @@ def fit_edo_shape(x, y, ct, cur, tag):
 
 	return result, forecast
 
-def copy_edo_shape(x, y, ct, cur, tag1, model):
+def copy_edo_shape(x, y, ct, cur, tag1, model, paramp):
 
 	tag2 = 'DEATHS' if tag1 == 'CASES' else 'CASES'
-	params1, func1, ffunc1 = get_edo_config(x, y, ct, cur, tag1)
-	params3, func2, ffunc2 = get_edo_config(x, y, ct, cur, tag2)
+	params1, func1, ffunc1 = get_edo_config(x, y, ct, cur, tag1, paramp)
+	params3, func2, ffunc2 = get_edo_config(x, y, ct, cur, tag2, paramp)
 
 	if model is None:
 		params2 = params3
@@ -313,14 +303,14 @@ def copy_edo_shape(x, y, ct, cur, tag1, model):
 	return result, forecast
 
 
-def copy_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text):
+def copy_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text, paramp):
 	rname = ct.replace('_', ' ')
 	fdata = f'gpdata/dat/{ct}-{id}.dat'
 	fgplot = f'gpdata/{ct}-{id}.gp'
 	fsvg = f'svg/{ct}-{id}.svg'
 	freport = f'report/{ct}-{id}.html'
 
-	model, forecast = copy_edo_shape(x, y, ct, cur, tag, model_consolidated[0])
+	model, forecast = copy_edo_shape(x, y, ct, cur, tag, model_consolidated[0], paramp)
 
 	if model.success == False:
 		data_consolidated.append('n.a.')
@@ -367,14 +357,14 @@ def copy_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_cons
 			f.write(param_page(rname, table_info, table_stat, table_obs,fsvg))
 	return
 
-def run_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text):
+def run_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text, paramp):
 	rname = ct.replace('_', ' ')
 	fdata = f'gpdata/dat/{ct}-{id}.dat'
 	fgplot = f'gpdata/{ct}-{id}.gp'
 	fsvg = f'svg/{ct}-{id}.svg'
 	freport = f'report/{ct}-{id}.html'
 
-	model, forecast = fit_edo_shape(x, y, ct, cur, tag)
+	model, forecast = fit_edo_shape(x, y, ct, cur, tag, paramp)
 
 	if model.success == False:
 		data_consolidated.append('n.a.')

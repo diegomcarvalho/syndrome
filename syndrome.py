@@ -5,7 +5,31 @@ import data as dt
 import countryprocessor as cp
 import paramprocessor as pp
 
-import curses
+def printx(y, x, s): 
+    print(' ' * x, s)
+    return
+
+def apply_filter(workload, filter_list):
+    del_list = list()
+    for ct, data in workload.items():
+        if ct not in filter_list:
+            del_list.append(ct)
+
+    for i in del_list:
+        del workload[i]
+
+def submit_work(workload, filter_list, workerlist, paramp, work_todo, chunk):
+    qnt = 0
+    for ct, data in sorted(workload.items(), key=lambda x: x[1]['ACCASES']):
+        print(f'Submiting {ct}')
+        wid = cp.process_country.remote(ct, data['DATA'], data['DATE'], paramp, work_todo)
+        workerlist.append(wid)
+        del workload[ct]
+        qnt += 1
+        if qnt >= chunk:
+            break
+    return qnt
+
 
 def main():
     ray.init(address='10.155.1.10:6379', redis_password='dc')
@@ -13,50 +37,63 @@ def main():
 
     start_time = time.time()
 
-    paramp = pp.ParamProcessor.remote()
+    var_names = ['beta', 'theta', 'p', 'sigma', 'rho', 'epsilonA', 'epsilonI',
+        'lambda0', 'gammaA', 'gammaI', 'gammaD', 'cD', 'dD', 'dI', 'delta',
+        'S0', 'R0', 'Q0', 'E0', 'A0', 'I0', 'D0', 'day']
+
+    paramp = pp.ParamProcessor.remote('memory-edo', var_names)
 
     workload = dt.build_database()
 
     workerlist = list()
 
+    cpu = 0
+    for node in ray.nodes():
+        cpu += int(node['Resources']['CPU'])
+
+
     #filter_list = [ 'Albania', 'Austria', 'Australia', 'Bahrain']
     #filter_list = dt.brasilian_regions()
     filter_list = workload.keys()
 
-    for ct, data in sorted(workload.items(), key=lambda x: x[1]['ACCASES']):
-        if ct in filter_list:
-            print(f'Submiting {ct}')
-            wid = cp.process_country.remote(ct, data['DATA'], data['DATE'], paramp, [x for x in range(9)])
-            workerlist.append(wid)
+    apply_filter(workload, filter_list)
+
+    print(f'Workload is {len(workload)}')
+
+    work_chunk = submit_work(workload, filter_list, workerlist, paramp, [x for x in range(9)], cpu)
+
+    print(f'Submitting {work_chunk} tasks ({len(workload)}/{len(workerlist)} to go).')
     
-    screen = curses.initscr()
+    check_size = 4
+
     with open('log/processed.log', 'w') as f:
         loops = 0
         while len(workerlist) > 0:
-            num_returns = 8 if len(workerlist) >= 8 else len(workerlist)
+            num_returns = check_size if len(workerlist) >= check_size else len(workerlist)
             ready, not_ready = ray.wait(workerlist, num_returns=num_returns)
 
             done = ray.get(ready)
-            screen.clear()
-            screen.addstr(3, 0, f'Iteration             : {loops}')
-            screen.addstr(4, 0, f'Ready length, regions : {len(ready)}')
-            screen.addstr(5, 0, f'Not Ready length      : {len(not_ready)}')
-            screen.addstr(4,40, 'Ready List')
+            printx(3, 0, f'Iteration             : {loops}')
+            printx(4, 0, f'Ready length, regions : {len(ready)}')
+            printx(5, 0, f'Not Ready length      : {len(not_ready)}')
+            printx(5, 0, f'Workload              : {len(workload)}')
+            printx(4,40, 'Ready List')
             for pos, i in enumerate(done):
-                screen.addstr(5+pos,40, f'{i}')
+                printx(5+pos,40, f'{i}')
             elapsed_time = time.time() - start_time
             stetime = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
-            screen.addstr(7, 0, f'Elapsed time          : {stetime}')
-            screen.refresh()
+            printx(7, 0, f'Elapsed time          : {stetime}')
 
             for nct in done:
                 f.write(f'{nct}\n')
 
             workerlist = not_ready
+
+            if len(workerlist) < cpu:
+                submit_work(workload, filter_list, workerlist, paramp, [x for x in range(9)], cpu - len(workerlist))
+
             time.sleep(15)
             loops += 1
-
-    curses.endwin()
 
     elapsed_time = time.time() - start_time
     stetime = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
@@ -68,4 +105,4 @@ def main():
 
 
 if __name__ == "__main__":
-	main()
+    main()
