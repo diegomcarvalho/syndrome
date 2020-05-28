@@ -41,7 +41,7 @@ for i in BR_states:
 while 'Brasil' in W_regions:
 	W_regions.remove('Brasil')
 
-f = open('index_template.html', 'r')
+f = open('index_id_template.html', 'r')
 
 l = 5 - len(BR_states) % 5
 for i in range(l):
@@ -49,7 +49,7 @@ for i in range(l):
 
 str_id = 'EDO' if id == 6 else 'SOCNET'
 
-for i in range(27):
+for i in range(36):
 	line = f.readline()
 	print(line.replace('Model', f'{str_id} Model'))
 
@@ -77,7 +77,7 @@ if l != 5:
 	for i in range(l):
 		W_regions.append('Brazil')
 
-for i in range(11):
+for i in range(12):
 	line = f.readline()
 	print(line)
 
