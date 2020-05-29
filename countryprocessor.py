@@ -85,7 +85,7 @@ def process_country(ct, datadict, curdate, paramp, program):
 	if id in program:
 		x = data['eDay'].values
 		y = data['accCases'].values
-		fit.run_data(x, y, ct, 9, 'Acc Infected', curdate, 'Current data', txt1='Current Data')
+		fit.run_data(x, y, ct, id, 'Acc Infected', curdate, 'Current data', txt1='Current Data')
 
 	with open(f'log/{ct}.dat', 'w') as f:
 		f.write('process_country')

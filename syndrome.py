@@ -60,7 +60,7 @@ def main():
 
     print(f'Workload is {len(workload)}')
 
-    work_chunk = submit_work(workload, filter_list, workerlist, paramp, [x for x in range(9)], cpu+4)
+    work_chunk = submit_work(workload, filter_list, workerlist, paramp, [x for x in range(10)], cpu+4)
 
     print(f'Submitting {work_chunk} tasks ({len(workload)}/{len(workerlist)} to go).')
     
@@ -90,7 +90,7 @@ def main():
             workerlist = not_ready
 
             if len(workerlist) < cpu:
-                submit_work(workload, filter_list, workerlist, paramp, [x for x in range(9)], cpu - len(workerlist))
+                submit_work(workload, filter_list, workerlist, paramp, [x for x in range(10)], cpu - len(workerlist))
 
             time.sleep(15)
             loops += 1
