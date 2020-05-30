@@ -278,7 +278,7 @@ def fit_edo_shape(x, y, ct, cur, tag, paramp):
 	params, func, ffunc = get_edo_config(x, y, ct, cur, tag, paramp)
 
 	minner = lm.Minimizer(func, params, fcn_args=(y, params))
-	result = minner.minimize(max_nfev=35000, ftol=1.49012e-09, xtol=1.49012e-09)
+	result = minner.minimize(max_nfev=35000, xtol=1.0e-17)
 
 	forecast = None if result.success == False else ffunc(result.params, 7)
 
