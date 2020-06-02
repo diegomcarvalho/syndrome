@@ -121,12 +121,12 @@ def find_fit_bell(x, y, ct, log=False):
 
 	return ret_result, ret_model
 
-def run_model_bell(x, y, ct, id, ylabel, data_consolidated, model_consolidated, curdate, text):
+def run_model_bell(x, y, ct, g_id, ylabel, data_consolidated, model_consolidated, curdate, text):
 	rname = ct.replace('_', ' ')
-	fdata = f'gpdata/dat/{ct}-{id}.dat'
-	fgplot = f'gpdata/{ct}-{id}.gp'
-	fsvg = f'svg/{ct}-{id}.svg'
-	freport = f'report/{ct}-{id}.html'
+	fdata = f'gpdata/dat/{ct}-{g_id}.dat'
+	fgplot = f'gpdata/{ct}-{g_id}.gp'
+	fsvg = f'svg/{ct}-{g_id}.svg'
+	freport = f'report/{ct}-{g_id}.html'
 
 	result, model = find_fit_bell(x, y, ct)
 
@@ -137,7 +137,7 @@ def run_model_bell(x, y, ct, id, ylabel, data_consolidated, model_consolidated, 
 		dump_svg(fgplot, fsvg,
 					f'{text} for {rname} on {curdate}',
 					'Days from the first infected',
-					f'{ylabel}', f'gpdata/dat/{ct}-{id}.dat', 2, f"{rname} data",
+					f'{ylabel}', f'gpdata/dat/{ct}-{g_id}.dat', 2, f"{rname} data",
 					opt='colorsequence podo',
 					txt1='NO FIT AVAILABLE FOR THE CURRENT DATA', point=True)
 		#loggingg.info(f'run_model_bell: cannot fit deaths for {ct}')
@@ -163,12 +163,12 @@ def run_model_bell(x, y, ct, id, ylabel, data_consolidated, model_consolidated, 
 	dump_report(freport,result,x,y,7,fsvg,model,ct,ylabel)
 	return
 
-def run_model_sigmoid(x, y, ct, id, ylabel, data_consolidated, model_consolidated, curdate, text):
+def run_model_sigmoid(x, y, ct, g_id, ylabel, data_consolidated, model_consolidated, curdate, text):
 	rname = ct.replace('_', ' ')
-	fdata = f'gpdata/dat/{ct}-{id}.dat'
-	fgplot = f'gpdata/{ct}-{id}.gp'
-	fsvg = f'svg/{ct}-{id}.svg'
-	freport = f'report/{ct}-{id}.html'
+	fdata = f'gpdata/dat/{ct}-{g_id}.dat'
+	fgplot = f'gpdata/{ct}-{g_id}.gp'
+	fsvg = f'svg/{ct}-{g_id}.svg'
+	freport = f'report/{ct}-{g_id}.html'
 
 	result, model = find_fit_sigmoid(x, y)
 
@@ -303,12 +303,12 @@ def copy_edo_shape(x, y, ct, cur, tag1, model, paramp):
 	return result, forecast
 
 
-def copy_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text, paramp):
+def copy_edo_model(x, y, ct, g_id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text, paramp):
 	rname = ct.replace('_', ' ')
-	fdata = f'gpdata/dat/{ct}-{id}.dat'
-	fgplot = f'gpdata/{ct}-{id}.gp'
-	fsvg = f'svg/{ct}-{id}.svg'
-	freport = f'report/{ct}-{id}.html'
+	fdata = f'gpdata/dat/{ct}-{g_id}.dat'
+	fgplot = f'gpdata/{ct}-{g_id}.gp'
+	fsvg = f'svg/{ct}-{g_id}.svg'
+	freport = f'report/{ct}-{g_id}.html'
 
 	model, forecast = copy_edo_shape(x, y, ct, cur, tag, model_consolidated[0], paramp)
 
@@ -357,12 +357,12 @@ def copy_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_cons
 			f.write(param_page(rname, table_info, table_stat, table_obs,fsvg))
 	return
 
-def run_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text, paramp):
+def run_edo_model(x, y, ct, g_id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text, paramp):
 	rname = ct.replace('_', ' ')
-	fdata = f'gpdata/dat/{ct}-{id}.dat'
-	fgplot = f'gpdata/{ct}-{id}.gp'
-	fsvg = f'svg/{ct}-{id}.svg'
-	freport = f'report/{ct}-{id}.html'
+	fdata = f'gpdata/dat/{ct}-{g_id}.dat'
+	fgplot = f'gpdata/{ct}-{g_id}.gp'
+	fsvg = f'svg/{ct}-{g_id}.svg'
+	freport = f'report/{ct}-{g_id}.html'
 
 	model, forecast = fit_edo_shape(x, y, ct, cur, tag, paramp)
 
@@ -411,12 +411,12 @@ def run_edo_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_conso
 			f.write(param_page(rname, table_info, table_stat, table_obs,fsvg))
 	return
 
-def run_rolling_average(x, y, ct, id, avgsize, curdate, ylabel):
+def run_rolling_average(x, y, ct, g_id, avgsize, curdate, ylabel):
 	rname = ct.replace('_', ' ')
-	fdata = f'gpdata/dat/{ct}-{id}.dat'
-	fgplot = f'gpdata/{ct}-{id}.gp'
-	fsvg = f'svg/{ct}-{id}.svg'
-	freport = f'report/{ct}-{id}.html'
+	fdata = f'gpdata/dat/{ct}-{g_id}.dat'
+	fgplot = f'gpdata/{ct}-{g_id}.gp'
+	fsvg = f'svg/{ct}-{g_id}.svg'
+	freport = f'report/{ct}-{g_id}.html'
 
 	dump_xy_dat(fdata,x,y)	
 
@@ -438,12 +438,12 @@ def run_rolling_average(x, y, ct, id, avgsize, curdate, ylabel):
 	return 
 
 
-def get_model_socnet(ct, id, curdate):
+def get_model_socnet(ct, g_id, curdate):
 	rname = ct.replace('_', ' ')
-	fdata = f'gpdata/dat/{ct}-{id}.dat'
-	fgplot = f'gpdata/{ct}-{id}.gp'
-	fsvg = f'svg/{ct}-{id}.svg'
-	freport = f'report/{ct}-{id}.html'
+	fdata = f'gpdata/dat/{ct}-{g_id}.dat'
+	fgplot = f'gpdata/{ct}-{g_id}.gp'
+	fsvg = f'svg/{ct}-{g_id}.svg'
+	freport = f'report/{ct}-{g_id}.html'
 	ylabel = 'Acc Infected'
 
 	rname = ct.replace('_', ' ')
@@ -465,14 +465,14 @@ def get_model_socnet(ct, id, curdate):
 					txt1='NO MODE AVAILABLE FOR THE CURRENT DATA')
 	return 
 
-def run_socnet_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text):
+def run_socnet_model(x, y, ct, g_id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text):
 	import fitrs3
 	from scipy.stats import chisquare
 	rname = ct.replace('_', ' ')
-	fdata = f'gpdata/dat/{ct}-{id}.dat'
-	fgplot = f'gpdata/{ct}-{id}.gp'
-	fsvg = f'svg/{ct}-{id}.svg'
-	freport = f'report/{ct}-{id}.html'
+	fdata = f'gpdata/dat/{ct}-{g_id}.dat'
+	fgplot = f'gpdata/{ct}-{g_id}.gp'
+	fsvg = f'svg/{ct}-{g_id}.svg'
+	freport = f'report/{ct}-{g_id}.html'
 
 	file1 = f'scnlog/{ct}-p1.dat'
 	file2 = f'scnlog/{ct}-p2.dat'
@@ -525,11 +525,11 @@ def run_socnet_model(x, y, ct, id, cur, tag, ylabel, data_consolidated, model_co
 			f.write(param_page(rname, table_info, table_stat, table_obs,fsvg))
 	return
 
-def run_data(x, y, ct, id, ylabel, curdate, text, txt1=''):
+def run_data(x, y, ct, g_id, ylabel, curdate, text, txt1=''):
 	rname = ct.replace('_', ' ')
-	fdata = f'gpdata/dat/{ct}-{id}.dat'
-	fgplot = f'gpdata/{ct}-{id}.gp'
-	fsvg = f'svg/{ct}-{id}.svg'
+	fdata = f'gpdata/dat/{ct}-{g_id}.dat'
+	fgplot = f'gpdata/{ct}-{g_id}.gp'
+	fsvg = f'svg/{ct}-{g_id}.svg'
 	dump_xy_dat(fdata,x,y)
 	dump_svg(fgplot, fsvg,
 				f'{text} for {rname} on {curdate}',

@@ -189,4 +189,39 @@ def build_database(fetchdata=True):
 
 	return global_database
 
+def process_municipio_MS(df, database, municipio):
+	state = df[(df['municipio'] == municipio)]
+	state = state.sort_values(['data'])
+	data = list(np.diff(state.casosAcumulado, prepend=[0]))
+	cumdata = list(state.casosAcumulado.values)
+	death = list(np.diff(state.obitosAcumulado, prepend=[0]))
+	cumdeath = list(state.obitosAcumulado.values)
+	population = [210147125 for _ in range(len(data))]
+	dates = state.data
 
+	size = len(cumdata)
+	day = np.arange(size) + 1
+	values = {"data": dates, "eDay": day, "cases": data,
+           "accCases": cumdata, "popData2018": population, "deaths": death, "accDeaths": cumdeath}
+
+	cur = pd.DataFrame(values)
+
+	# Drop all with accumulated sum == 0, since they got before the first case
+	cur = cur[cur['accCases'] != 0]
+
+	curdate = f"{cur['data'].iloc[-1]}".replace('00:00:00', '')
+	popdata = int(cur['popData2018'].iloc[-1])
+	accases = int(cur['accCases'].iloc[-1])
+
+	# Reset the index, so index + 1 is the epidemilogical day
+	cur = cur.reset_index()
+	cur = cur.drop('index', axis=1)
+	cur['eDay'] = cur.index + 1
+
+	# Calculate the rolling sum
+	cur['newcasesroll'] = cur['cases'].rolling(7).sum()
+	cur['newdeathsroll'] = cur['deaths'].rolling(7).sum()
+
+	database[municipio] = { 'DATE': curdate, 'DATA': cur.to_dict(), 'ACCASES': accases, 'POPULATION': popdata }
+
+	return

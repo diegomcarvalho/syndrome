@@ -1,4 +1,5 @@
 import os
+import itertools
 
 def run_gnuplot_file(filename, datafile=None):
 	if datafile is not None:
@@ -6,6 +7,17 @@ def run_gnuplot_file(filename, datafile=None):
 			return
 	os.system(f'gnuplot < {filename} > /tmp/gnuplot.$$.log 2>&1')
 	return
+
+def dump_xy_dat(filename, x, y):
+	with open(filename, 'w') as f:
+		for i, j in itertools.zip_longest(x, y, fillvalue='nan'):
+			f.write(f'{i}, {j}\n')
+	return
+
+def dump_xyz_dat(filename, x, y, z):
+	with open(filename, 'w') as f:
+		for i, j, k in itertools.zip_longest(x, y, z, fillvalue='nan'):
+			f.write(f'{i}, {j}, {k}\n')
 
 def dump_svg_ph(filename, svgfile, title, xlabel, ylabel, txt1):
 	with open(filename, 'w') as f:
