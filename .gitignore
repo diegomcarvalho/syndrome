@@ -3,10 +3,12 @@ report/*
 svg/*
 web/*
 log/*
-*/__pycache__/*
+**/__pycache__/**
 *.pyc
 scnlog/*
 timeline.json
-timeline.json
 memory-edo/**
 website
+param.html
+data/ECDC.csv
+memory-edo/tmp/CASES/Acre.json
