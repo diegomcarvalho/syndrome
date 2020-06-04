@@ -253,7 +253,9 @@ def get_edo_config(x, y, ct, cur, tag, paramp):
 		params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0)
 		params.add('A0', value=a*y[0], vary=False, min=0)
 		params.add('I0', value=i*y[0], vary=False, min=0)
+		params.add('M0', value=0, vary=False, min=0)
 
+		params.add('pop', value=pop, min=0, vary=False)
 		params.add('day', value=len(y), min=0, vary=False)
 
 	else:
@@ -264,6 +266,9 @@ def get_edo_config(x, y, ct, cur, tag, paramp):
 		params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0)
 		params.add('A0', value=a*y[0], vary=False, min=0)
 		params.add('I0', value=i*y[0], vary=False, min=0)
+		params.add('M0', value=0, vary=False, min=0)
+
+		params.add('pop', value=pop, min=0, vary=False)
 		params.add('day', value=len(y), min=0, vary=False)
 
 	if y[0] < 5:
@@ -278,9 +283,9 @@ def fit_edo_shape(x, y, ct, cur, tag, paramp):
 	params, func, ffunc = get_edo_config(x, y, ct, cur, tag, paramp)
 
 	minner = lm.Minimizer(func, params, fcn_args=(y, params))
-	result = minner.minimize(max_nfev=35000, xtol=1.0e-17)
+	result = minner.minimize(max_nfev=50000, xtol=1.0e-17)
 
-	forecast = None if result.success == False else ffunc(result.params, 7)
+	forecast = None if result.success == False else ffunc(result.params, 14)
 
 	return result, forecast
 
@@ -298,7 +303,7 @@ def copy_edo_shape(x, y, ct, cur, tag1, model, paramp):
 	minner = lm.Minimizer(func1, params2, fcn_args=(y, params2))
 	result = minner.minimize(max_nfev=35000, ftol=1.49012e-09, xtol=1.49012e-09)
 
-	forecast = None if result.success == False else ffunc1(result.params, 7)
+	forecast = None if result.success == False else ffunc1(result.params, 14)
 
 	return result, forecast
 

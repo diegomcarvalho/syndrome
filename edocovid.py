@@ -19,6 +19,7 @@ def model_jit(w, t, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13):
     I = w[4]
     D = w[5]
     R = w[6]
+    M = w[7]
 
     #constantes
     beta = c0
@@ -44,7 +45,8 @@ def model_jit(w, t, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13):
     dIdt = sigma * rho * E - gammaI * I - dI * I - epsilonI * I
     dDdt = epsilonA * A + epsilonI * I - dD * D - gammaD * D
     dRdt = gammaA * A + gammaI * I + gammaD * D
-    dwdt = [dSdt, dQdt, dEdt, dAdt, dIdt, dDdt, dRdt]
+    dMdt = dD * D + dI * I
+    dwdt = [dSdt, dQdt, dEdt, dAdt, dIdt, dDdt, dRdt, dMdt]
     return dwdt
 
 
@@ -52,8 +54,7 @@ def rodamodelo2dia(vetor_condicao, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, 
     #timespan
     t = np.linspace(0, 1, 20)
 #resolucao
-    w = odeint(model2, vetor_condicao, t, args=(
-        c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13))
+    w = odeint(model2, vetor_condicao, t, args=(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13))
 #retorna valor um ano depois
     return w[-1, :]
 
@@ -75,6 +76,7 @@ def rodacontagio_D_acum(vetor_coeficientes, vetor_inicial, tempo):
     I = []
     D = []
     R = []
+    M = []
     D_Acum = []
 
     Lista.append(vetor_inicial)
@@ -85,6 +87,7 @@ def rodacontagio_D_acum(vetor_coeficientes, vetor_inicial, tempo):
     I.append(vetor_inicial[4])
     D.append(vetor_inicial[5])
     R.append(vetor_inicial[6])
+    M.append(vetor_inicial[7])
     D_Acum.append(vetor_inicial[5])
 
     c = vetor_coeficientes
@@ -98,6 +101,7 @@ def rodacontagio_D_acum(vetor_coeficientes, vetor_inicial, tempo):
         I.append(Lista[k+1][4])
         D.append(Lista[k+1][5])
         R.append(Lista[k+1][6])
+        M.append(Lista[k+1][7])
         #D_Acum.append(D_Acum[-1] + Lista[k+1][4] * c[7] + Lista[k+1][3] * c[6] - Lista[k+1][5] * c[12])
         D_Acum.append(D_Acum[-1] + Lista[k+1][4] * c[7] + Lista[k+1][3] * c[6])
 
@@ -112,6 +116,7 @@ def rodacontagio_M_acum(vetor_coeficientes, vetor_inicial, tempo):
     I = []
     D = []
     R = []
+    M = []
     M_Acum = []
 
     Lista.append(vetor_inicial)
@@ -122,6 +127,7 @@ def rodacontagio_M_acum(vetor_coeficientes, vetor_inicial, tempo):
     I.append(vetor_inicial[4])
     D.append(vetor_inicial[5])
     R.append(vetor_inicial[6])
+    M.append(vetor_inicial[7])
     M_Acum.append(1)
 
     c = vetor_coeficientes
@@ -135,6 +141,7 @@ def rodacontagio_M_acum(vetor_coeficientes, vetor_inicial, tempo):
         I.append(Lista[k+1][4])
         D.append(Lista[k+1][5])
         R.append(Lista[k+1][6])
+        M.append(Lista[k+1][7])
         #D_Acum.append(D_Acum[-1] + Lista[k+1][4] * c[7] + Lista[k+1][3] * c[6] - Lista[k+1][5] * c[12])
         M_Acum.append(M_Acum[-1] + Lista[k+1][5] * c[12])
 
@@ -164,10 +171,11 @@ def residual_edo_D(params, data, param):
     I0 = params['I0'].value
     D0 = params['D0'].value
     R0 = params['R0'].value
+    M0 = params['M0'].value
 
     vet = (beta, theta, p, lambda0, sigma, rho, epsilonA,
            epsilonI, gammaA, gammaI, gammaD, dI, dD, delta)
-    init_cond = (S0, Q0, E0, A0, I0, D0, R0)
+    init_cond = (S0, Q0, E0, A0, I0, D0, R0, M0)
 
     model = rodacontagio_D_acum(vet, init_cond, day-1)
     return np.array(model)-np.array(data)
@@ -196,10 +204,11 @@ def residual_edo_M(params, data, param):
     I0 = params['I0'].value
     D0 = params['D0'].value
     R0 = params['R0'].value
+    M0 = params['M0'].value
 
     vet = (beta, theta, p, lambda0, sigma, rho, epsilonA,
            epsilonI, gammaA, gammaI, gammaD, dI, dD, delta)
-    init_cond = (S0, Q0, E0, A0, I0, D0, R0)
+    init_cond = (S0, Q0, E0, A0, I0, D0, R0, M0)
 
     model = rodacontagio_M_acum(vet, init_cond, day-1)
     return np.array(model)-np.array(data)
@@ -228,10 +237,11 @@ def eval_edo_D(params, forecast):
     I0 = params['I0'].value
     D0 = params['D0'].value
     R0 = params['R0'].value
+    M0 = params['M0'].value
 
     vet = (beta, theta, p, lambda0, sigma, rho, epsilonA,
            epsilonI, gammaA, gammaI, gammaD, dI, dD, delta)
-    init_cond = (S0, Q0, E0, A0, I0, D0, R0)
+    init_cond = (S0, Q0, E0, A0, I0, D0, R0, M0)
 
     model = rodacontagio_D_acum(vet, init_cond, day-1)
     return model
@@ -260,10 +270,11 @@ def eval_edo_M(params, forecast):
     I0 = params['I0'].value
     D0 = params['D0'].value
     R0 = params['R0'].value
+    M0 = params['M0'].value
 
     vet = (beta, theta, p, lambda0, sigma, rho, epsilonA,
            epsilonI, gammaA, gammaI, gammaD, dI, dD, delta)
-    init_cond = (S0, Q0, E0, A0, I0, D0, R0)
+    init_cond = (S0, Q0, E0, A0, I0, D0, R0, M0)
 
     model = rodacontagio_M_acum(vet, init_cond, day-1)
     return model
