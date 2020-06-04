@@ -25,6 +25,39 @@ def brasilian_regions():
 
 	return l
 
+def proccess_MS_unit(df):
+		state = df
+		state = state.sort_values(['data'])
+		data = list(np.diff(state.casosAcumulado, prepend=[0]))
+		cumdata = list(state.casosAcumulado.values)
+		death = list(np.diff(state.obitosAcumulado, prepend=[0]))
+		cumdeath = list(state.obitosAcumulado.values)
+		population = state['populacaoTCU2019'].iloc[-1]
+		dates = state.data
+
+		size = len(cumdata)
+		day = np.arange(size) + 1
+		values = {"data": dates, "eDay": day, "cases": data,
+			"accCases": cumdata, "popData2018": population, "deaths": death, "accDeaths": cumdeath}
+
+		cur = pd.DataFrame(values)
+
+		# Drop all with accumulated sum == 0, since they got before the first case
+		cur = cur[cur['accCases'] != 0]
+
+		curdate = f"{cur['data'].iloc[-1]}".replace('00:00:00', '')
+		popdata = int(cur['popData2018'].iloc[-1])
+		accases = int(cur['accCases'].iloc[-1])
+		cur = cur.reset_index()
+		cur = cur.drop('index', axis=1)
+		cur['eDay'] = cur.index + 1
+
+		# Calculate the rolling sum
+		cur['newcasesroll'] = cur['cases'].rolling(7).sum()
+		cur['newdeathsroll'] = cur['deaths'].rolling(7).sum()
+
+		return (cur, curdate, popdata, accases)
+
 def process_CDCEU(database, fetchdata=True):
 
 	if fetchdata:
