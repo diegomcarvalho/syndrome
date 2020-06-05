@@ -211,7 +211,8 @@ def get_edo_config(x, y, ct, cur, tag, paramp):
 
 	residual = edo.residual_edo_D if tag == 'CASES' else edo.residual_edo_M
 	ffunct = edo.eval_edo_D if tag == 'CASES' else edo.eval_edo_M
-	future = paramp.get_param.remote(ct, tag)
+	if paramp is not None:
+		future = paramp.get_param.remote(ct, tag)
 
 	pop = int(cur['popData2018'].iloc[-1])
 	a = 1.2
@@ -220,7 +221,10 @@ def get_edo_config(x, y, ct, cur, tag, paramp):
 	death_rate = cur['accDeaths'].iloc[-1] / cur['accCases'].iloc[-1]  # 0.035
 	dD = gammaD * death_rate / (1 - death_rate)
 
-	params = ray.get(future)
+	if paramp is not None:
+		params = ray.get(future)
+	else:
+		params = lm.Parameters()
 	
 	if len(params.items()) == 0:
 		params = lm.Parameters()
