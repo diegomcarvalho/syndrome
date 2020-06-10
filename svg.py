@@ -86,3 +86,7 @@ def dump_svg2D(filename, svgfile, title, xlabel, ylabel, datafile, col1, col2, l
 		f.write(f"'' using 1:(${col2}) w linesp pt 7 title '{label2}'")
 	run_gnuplot_file(filename,datafile)
 	return
+
+from IPython.display import SVG, display
+def show_svg(file):
+    display(SVG(file))

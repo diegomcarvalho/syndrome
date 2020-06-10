@@ -25,6 +25,12 @@ def brasilian_regions():
 
 	return l
 
+def clean_tcu_data(s):
+	s = str(s)
+	s = s.split('(')[0]
+	s = s.replace('.', '')
+	return s
+
 def proccess_MS_unit(df):
 		state = df
 		state = state.sort_values(['data'])
