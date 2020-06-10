@@ -9,7 +9,7 @@ import numba
 def model2(w, t, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13):
     return model_jit(w, t, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13)
 
-@numba.jit
+@numba.jit(nopython=True)
 def model_jit(w, t, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13):
     #variaveis
     S = w[0]
@@ -50,9 +50,9 @@ def model_jit(w, t, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13):
     return dwdt
 
 
-def rodamodelo2dia(vetor_condicao, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13):
+def rodamodelo2dia(vetor_condicao, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, step=20):
     #timespan
-    t = np.linspace(0, 1, 20)
+    t = np.linspace(0, 1, step)
 #resolucao
     w = odeint(model2, vetor_condicao, t, args=(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13))
 #retorna valor um ano depois
@@ -278,3 +278,72 @@ def eval_edo_M(params, forecast):
 
     model = rodacontagio_M_acum(vet, init_cond, day-1)
     return model
+
+def rodacontagio(vetor_coeficientes, vetor_inicial, tempo):
+    Lista = []
+    S = []
+    Q = []
+    E = []
+    A = []
+    I = []
+    D = []
+    R = []
+    M = []
+    M_Acum = []
+
+    Lista.append(vetor_inicial)
+    S.append(vetor_inicial[0])
+    Q.append(vetor_inicial[1])
+    E.append(vetor_inicial[2])
+    A.append(vetor_inicial[3])
+    I.append(vetor_inicial[4])
+    D.append(vetor_inicial[5])
+    R.append(vetor_inicial[6])
+    M.append(vetor_inicial[7])
+    M_Acum.append(1)
+
+    c = vetor_coeficientes
+    for k in range(tempo):
+        Lista.append(rodamodelo2dia(Lista[k], c[0], c[1], c[2], c[3],
+                                    c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[11], c[12], c[13]))
+        S.append(Lista[k+1][0])
+        Q.append(Lista[k+1][1])
+        E.append(Lista[k+1][2])
+        A.append(Lista[k+1][3])
+        I.append(Lista[k+1][4])
+        D.append(Lista[k+1][5])
+        R.append(Lista[k+1][6])
+        M.append(Lista[k+1][7])
+
+    return (S,Q,E,A,I,D,R,M)
+
+def eval_edo(params, forecast):
+    beta = params['beta'].value
+    theta = params['theta'].value
+    p = params['p'].value
+    lambda0 = params['lambda0'].value
+    sigma = params['sigma'].value
+    rho = params['rho'].value
+    epsilonA = params['epsilonA'].value
+    epsilonI = params['epsilonI'].value
+    gammaA = params['gammaA'].value
+    gammaI = params['gammaI'].value
+    gammaD = params['gammaD'].value
+    dI = params['dI'].value
+    dD = params['dD'].value
+    delta = params['delta'].value
+    day = params['day'].value + forecast
+    S0 = params['S0'].value
+    Q0 = params['Q0'].value
+    E0 = params['E0'].value
+    A0 = params['A0'].value
+    I0 = params['I0'].value
+    D0 = params['D0'].value
+    R0 = params['R0'].value
+    M0 = params['M0'].value
+
+    vet = (beta, theta, p, lambda0, sigma, rho, epsilonA,
+           epsilonI, gammaA, gammaI, gammaD, dI, dD, delta)
+    init_cond = (S0, Q0, E0, A0, I0, D0, R0, M0)
+
+    return rodacontagio(vet, init_cond, day-1)
