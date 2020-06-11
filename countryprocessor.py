@@ -58,19 +58,15 @@ def process_country(ct, datadict, curdate, paramp, program):
 	# Place holder for EDO model
 	g_id = 6
 	if g_id in program:
-		x = data['eDay'].values
-		y = data['accCases'].values
 		mdc = list()
-		tag = 'CASES'
-		fit.run_edo_model(x, y, ct, g_id, data, tag, 'Acc Infected', data_consolidated, mdc, curdate, 'SARS-COV-2-EDO-BR Model on cases', paramp)
+		tag = 'accCases'
+		fit.run_edo_model(ct, g_id, data, tag, 'Acc Infected', data_consolidated, mdc, curdate, 'SIMDRQME Model on cases', paramp)
 		model_consolidated.append(mdc[0])
 		if mdc[0] is not None:
 			paramp.set_param.remote(ct, tag, mdc[0].params)
 		
 		# Place holder for EDO model
-		x = data['eDay'].values
-		y = data['accDeaths'].values
-		fit.copy_edo_model(x, y, ct, g_id+1, data, 'DEATHS', 'Acc deaths', data_consolidated, mdc, curdate, 'SARS-COV-2-EDO-BR Model on deaths', paramp)
+		fit.copy_edo_model(ct, g_id+1, data, 'accDeaths', 'Acc deaths', data_consolidated, mdc, curdate, 'SIMDRQME Model on deaths', paramp)
 		model_consolidated.append(mdc[1])
 
 	# Place holder for SOCNET model
@@ -79,7 +75,7 @@ def process_country(ct, datadict, curdate, paramp, program):
 	if g_id in program:
 		x = data['eDay'].values
 		y = data['accCases'].values
-		fit.run_socnet_model(x, y, ct, g_id, data, 'CASES', 'Acc Infected', data_consolidated, mdc, curdate, 'SARS-COV-2-SOCNET-BR Model on cases')
+		fit.run_socnet_model(x, y, ct, g_id, data, 'accCases', 'Acc Infected', data_consolidated, mdc, curdate, 'SARS-COV-2-SOCNET-BR Model on cases')
 
 	g_id = 9
 	if g_id in program:

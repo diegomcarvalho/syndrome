@@ -50,7 +50,7 @@ def model_jit(w, t, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13):
     return dwdt
 
 
-def rodamodelo2dia(vetor_condicao, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, step=20):
+def rodamodelo2dia(vetor_condicao, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, step=50):
     #timespan
     t = np.linspace(0, 1, step)
 #resolucao
@@ -148,7 +148,7 @@ def rodacontagio_M_acum(vetor_coeficientes, vetor_inicial, tempo):
     return M_Acum
 
 
-def residual_edo_D(params, data, param):
+def residual_edo_D(params, data, param, step=20):
     beta = params['beta'].value
     theta = params['theta'].value
     p = params['p'].value
@@ -181,7 +181,7 @@ def residual_edo_D(params, data, param):
     return np.array(model)-np.array(data)
 
 
-def residual_edo_M(params, data, param):
+def residual_edo_M(params, data, param, step=20):
     beta = params['beta'].value
     theta = params['theta'].value
     p = params['p'].value
@@ -346,4 +346,39 @@ def eval_edo(params, forecast):
            epsilonI, gammaA, gammaI, gammaD, dI, dD, delta)
     init_cond = (S0, Q0, E0, A0, I0, D0, R0, M0)
 
-    return rodacontagio(vet, init_cond, day-1)
+    return rodacontagio(vet, init_cond, day - 1)
+    
+def residual_edo_combined(params, data, param, step=20):
+    beta = params['beta'].value
+    theta = params['theta'].value
+    p = params['p'].value
+    lambda0 = params['lambda0'].value
+    sigma = params['sigma'].value
+    rho = params['rho'].value
+    epsilonA = params['epsilonA'].value
+    epsilonI = params['epsilonI'].value
+    gammaA = params['gammaA'].value
+    gammaI = params['gammaI'].value
+    gammaD = params['gammaD'].value
+    dI = params['dI'].value
+    dD = params['dD'].value
+    delta = params['delta'].value
+    day = params['day'].value
+    S0 = params['S0'].value
+    Q0 = params['Q0'].value
+    E0 = params['E0'].value
+    A0 = params['A0'].value
+    I0 = params['I0'].value
+    D0 = params['D0'].value
+    R0 = params['R0'].value
+    M0 = params['M0'].value
+
+    vet = (beta, theta, p, lambda0, sigma, rho, epsilonA, epsilonI, gammaA, gammaI, gammaD, dI, dD, delta)
+    init_cond = (S0, Q0, E0, A0, I0, D0, R0, M0)
+
+    model1 = np.array(rodacontagio_M_acum(vet, init_cond, day - 1))
+    model2 = np.array(rodacontagio_D_acum(vet, init_cond, day - 1))
+
+    model = np.append(model1, model2)
+
+    return np.array(model)-np.array(data)

@@ -33,7 +33,7 @@ l = 5 - len(BR_states) % 5
 for i in range(l):
 	BR_states.append('Brasil')
 
-for i in range(44):
+for i in range(45):
 	line = f.readline()
 	print(line)
 

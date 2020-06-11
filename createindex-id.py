@@ -57,7 +57,7 @@ for i in range(l):
 
 str_id = 'EDO' if g_id == 6 else 'SOCNET'
 
-for i in range(36):
+for i in range(37):
     line = f.readline()
     print(line.replace('Model', f'{str_id} Model'))
 

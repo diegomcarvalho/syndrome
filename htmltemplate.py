@@ -69,7 +69,7 @@ footer = """
 </div>
 """
 
-param_mustach = """ 
+param_mustach1 = """ 
 {{{HEADER}}}
 <div class="w3-row-padding w3-padding-16 w3-container">
 	<div class="w3-content">
@@ -82,7 +82,7 @@ param_mustach = """
 <div class="w3-row-padding w3-padding-16 w3-container">
 	<div class="w3-content">
 		<h1><i class="fa fa-globe w3-padding-16 w3-text-black w3-margin-right"></i>{{TAG_FILE}}'s parameters</h1>
-		<div class="w3-content"><center><img src="../{{{TAG_FIG}}}"/></center></div>
+		<div class="w3-content"><center><img src="../{{{TAG_FIG1}}}"/></center></div>
 		<h2><i class="fa fa-exclamation-circle w3-padding-16 w3-text-black w3-margin-right"></i>Information</h2>
 			<div class='w3-responsive container'>
 				<table class="w3-table w3-striped w3-bordered w3-border w3-tiny">
@@ -107,16 +107,70 @@ param_mustach = """
 </body>
 """ 
 
-def param_page(tag_file, table_info, table_stat, table_var, fig):
+param_mustach2 = """ 
+{{{HEADER}}}
+<div class="w3-row-padding w3-padding-16 w3-container">
+	<div class="w3-content">
+		<h1><i class="fa fa-pencil-square-o w3-padding-16 w3-text-black w3-margin-right"></i>Info</h1>
+<p class="w3-text-black">The graphics below present the current evolution of the COVID-19 in the heretofore region, and they depicted data provided by the European CDC, the Brazilian Ministry of Health, and forecast models created by us.  The models build on our research of statistical regression, ordinary differential equation systems, and social network dynamics.</p>
+
+<p class="w3-text-black">We are publishing this information to share our knowledge about the pandemic and exchange insights with our research peers and reviewers. This information provided as is,  and without warranties of any kind either express or implied. The authors do not guarantee validity, accuracy, or correctness as any implication or future result.</p>
+	</div>
+</div>
+<div class="w3-row-padding w3-padding-16 w3-container">
+	<div class="w3-content">
+		<h1><i class="fa fa-globe w3-padding-16 w3-text-black w3-margin-right"></i>{{TAG_FILE}}'s parameters</h1>
+		<div class="w3-content"><center><img src="../{{{TAG_FIG1}}}"/></center></div>
+		<div class="w3-content"><center><img src="../{{{TAG_FIG2}}}"/></center></div>
+		<div class="w3-content"><center><img src="../{{{TAG_FIG3}}}"/></center></div>
+		<h2><i class="fa fa-exclamation-circle w3-padding-16 w3-text-black w3-margin-right"></i>Information</h2>
+			<div class='w3-responsive container'>
+				<table class="w3-table w3-striped w3-bordered w3-border w3-tiny">
+				{{{TABLE_INFO}}}
+				</table>
+			</div>
+		<h2><i class="fa fa-exclamation-circle w3-padding-16 w3-text-black w3-margin-right"></i>Model Result</h2>
+			<div class='w3-responsive container'>
+				<table class="w3-table w3-striped w3-bordered w3-border w3-tiny">
+				{{{TABLE_STAT}}}
+				</table>
+			</div>
+		<h2><i class="fa fa-exclamation-circle w3-padding-16 w3-text-black w3-margin-right"></i>Observation</h2>
+			<div class="w3-responsive container">
+				<table class="w3-table w3-striped w3-bordered w3-border w3-tiny">
+				{{{TABLE_VAR}}}
+				</table>
+			</div>
+	</div>
+</div>
+{{{FOOTER}}}
+</body>
+""" 
+
+def param_page1(tag_file, table_info, table_stat, table_var, fig1, fig2, fig3):
 	table_stat = table_stat.replace('<table>', '<table class="w3-table-all w3-tiny">')
 	mustach_dict = {
 		'HEADER': header,
-		'TAG_FIG': fig,
+		'TAG_FIG1': fig1,
+		'TAG_FIG2': fig2,
+		'TAG_FIG3': fig3,
 		'TAG_FILE': tag_file,
 		'TABLE_INFO': table_info,
 		'TABLE_STAT': table_stat,
 		'TABLE_VAR': table_var,
 		'FOOTER': footer
 	}
-	return pystache.render(param_mustach, mustach_dict)
+	return pystache.render(param_mustach2, mustach_dict)
 
+def param_page(tag_file, table_info, table_stat, table_var, fig1):
+	table_stat = table_stat.replace('<table>', '<table class="w3-table-all w3-tiny">')
+	mustach_dict = {
+		'HEADER': header,
+		'TAG_FIG1': fig1,
+		'TAG_FILE': tag_file,
+		'TABLE_INFO': table_info,
+		'TABLE_STAT': table_stat,
+		'TABLE_VAR': table_var,
+		'FOOTER': footer
+	}
+	return pystache.render(param_mustach1, mustach_dict)
