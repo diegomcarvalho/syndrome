@@ -372,13 +372,14 @@ def residual_edo_combined(params, data, param, step=20):
     D0 = params['D0'].value
     R0 = params['R0'].value
     M0 = params['M0'].value
+    pop = params['pop'].value
 
     vet = (beta, theta, p, lambda0, sigma, rho, epsilonA, epsilonI, gammaA, gammaI, gammaD, dI, dD, delta)
     init_cond = (S0, Q0, E0, A0, I0, D0, R0, M0)
 
-    model1 = np.array(rodacontagio_M_acum(vet, init_cond, day - 1))
-    model2 = np.array(rodacontagio_D_acum(vet, init_cond, day - 1))
+    model1 = np.array(rodacontagio_D_acum(vet, init_cond, day - 1))/pop
+    model2 = np.array(rodacontagio_M_acum(vet, init_cond, day - 1))/pop
 
     model = np.append(model1, model2)
 
-    return np.array(model)-np.array(data)
+    return np.array(model)-(np.array(data)/pop)

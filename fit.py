@@ -16,7 +16,7 @@ from lmfit.models import (BreitWignerModel, DampedOscillatorModel,
 						  StudentsTModel, VoigtModel)
 
 import edocovid as edo
-from htmltemplate import param_page
+from htmltemplate import param_page, param_page1
 from svg import dump_svg, dump_svg2D, dump_svg_ph
 
 
@@ -208,10 +208,33 @@ def run_model_sigmoid(x, y, ct, g_id, ylabel, data_consolidated, model_consolida
 	dump_report(freport,result,x,y,7,fsvg,model,ct,ylabel)
 	return
 
-def get_edo_config(x, y, ct, cur, tag, paramp):
+def get_edo_config(ct, cur, tag, paramp):
+	print(f"{ct} - {tag}")
+	if tag == 'accCases':
+		x = list(cur['eDay'])
+		y = list(cur[tag])
+		days = len(x)
+		residual = edo.residual_edo_D
+		ffunct = edo.eval_edo_D
+	elif tag == 'perCases':
+		x = list(cur['eDay'])
+		y = list(cur['accCases']/cur['popData2018'])
+		days = len(x)
+		residual = edo.residual_edo_D
+		ffunct = edo.eval_edo_D
+	elif tag == 'accCombined':
+		x = np.append(cur['eDay'],cur['eDay'])
+		y = np.append(cur['accCases'], cur['accDeaths'])
+		days = len(x)//2
+		residual = edo.residual_edo_combined
+		ffunct = edo.eval_edo_D
+	elif tag == 'accDeaths':
+		x = list(cur['eDay'])
+		y = list(cur[tag])
+		days = len(x)
+		residual = edo.residual_edo_M
+		ffunct = edo.eval_edo_M
 
-	residual = edo.residual_edo_D if tag == 'CASES' else edo.residual_edo_M
-	ffunct = edo.eval_edo_D if tag == 'CASES' else edo.eval_edo_M
 	if paramp is not None:
 		future = paramp.get_param.remote(ct, tag)
 
@@ -226,7 +249,7 @@ def get_edo_config(x, y, ct, cur, tag, paramp):
 		params = ray.get(future)
 	else:
 		params = lm.Parameters()
-	
+
 	if len(params.items()) == 0:
 		params = lm.Parameters()
 		params.add('beta', value=9.33E-08, min=0, max=40E-4)
@@ -241,9 +264,9 @@ def get_edo_config(x, y, ct, cur, tag, paramp):
 
 		params.add('lambda0', value=1 / len(y), vary=False)
 
-		params.add('gammaA',value=0.13, min=0.1, max=1.0)
-		params.add('gammaI',value=0.1, min=0, vary=False)
-		params.add('gammaD', value=0.12, min=0.1, max=1.0)
+		params.add('gammaA', value=1/14, vary=False)
+		params.add('gammaI', value=1/22, min=1/42, max=1/14)
+		params.add('gammaD', value=1/22, min=1/42, max=1/14)
 
 		params.add('cD', value=1.4, min=1.1, max=1.7)
 		params.add('dD', expr=f'gammaD*{death_rate}/(1-{death_rate})')
@@ -251,54 +274,64 @@ def get_edo_config(x, y, ct, cur, tag, paramp):
 
 		params.add('delta', value=0.0001, min=0, max=1.0)
 
-		params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop)
+		params.add('pop', value=pop, min=0, vary=False)
+		if y[0] < 5:
+			params.add('D0', value=y[0], vary=False, min=0)
+		else:
+			params.add('D0', value=y[0], vary=False,  min=0.75 * y[0], max=1.25*y[0])
+
+		params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop - a*y[0]+i*y[0] - a*y[0] - i*y[0])
 		params.add('R0', value=0, vary=False)
-		params.add('Q0', value=0.6*y[-1], vary=True, min=0, max=1.0*pop)
-		params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0)
-		params.add('A0', value=a*y[0], vary=False, min=0)
-		params.add('I0', value=i*y[0], vary=False, min=0)
-		params.add('M0', value=0, vary=False, min=0)
+		#params.add('Q0', value=0.6*y[-1], vary=True, min=0, max=1.0*pop)
+		params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0.0)
+		params.add('A0', value=a*y[0], vary=False, min=0.0)
+		params.add('I0', value=i*y[0], vary=False, min=0.0)
+		params.add('M0', value=0, vary=False, min=0.0)
+		params.add('Q0', expr="pop-S0-E0-A0-I0-D0-R0-M0", min=0.0)
 
 		params.add('pop', value=pop, min=0, vary=False)
-		params.add('day', value=len(y), min=0, vary=False)
+		params.add('day', value=days, min=0, vary=False)
 
 	else:
 		params.add('lambda0', value=1/len(y), vary=False)
+		params.add('gammaD', value=1/22, min=1/42, max=1/14)
 		params.add('dD', expr=f'gammaD*{death_rate}/(1-{death_rate})')
-		params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop)
-		params.add('Q0', value=0.6*y[-1], vary=True, min=0, max=1.0*pop)
+
+		params.add('pop', value=pop, min=0, vary=False)
+		if y[0] < 5:
+			params.add('D0', value=y[0], vary=False, min=0)
+		else:
+			params.add('D0', value=y[0], vary=False,  min=0.75 * y[0], max=1.25*y[0])
+		params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop - a*y[0]+i*y[0] - a*y[0] - i*y[0])
+		params.add('R0', value=0, vary=False)
+		#params.add('Q0', value=0.6*y[-1], vary=True, min=0, max=1.0*pop)
 		#params.add('Q0', value=0.6*y[-1], vary=False, min=0)
 		params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0)
 		params.add('A0', value=a*y[0], vary=False, min=0)
 		params.add('I0', value=i*y[0], vary=False, min=0)
 		params.add('M0', value=0, vary=False, min=0)
+		params.add('Q0', expr="pop-S0-E0-A0-I0-D0-R0-M0", min=0.0)
 
-		params.add('pop', value=pop, min=0, vary=False)
-		params.add('day', value=len(y), min=0, vary=False)
+		params.add('day', value=days, min=0, vary=False)
 
-	if y[0] < 5:
-		params.add('D0', value=y[0], vary=False, min=0)
-	else:
-		params.add('D0', value=y[0], vary=False,  min=0.75 * y[0], max=1.25*y[0])
+	return x, y, params, residual, ffunct
 
-	return params, residual, ffunct
+def fit_edo_shape(ct, cur, tag, paramp=None, forecast_days=14):
 
-def fit_edo_shape(x, y, ct, cur, tag, paramp=None, forecast_days=14):
-
-	params, func, ffunc = get_edo_config(x, y, ct, cur, tag, paramp)
+	x, y, params, func, ffunc = get_edo_config(ct, cur, tag, paramp)
 
 	minner = lm.Minimizer(func, params, fcn_args=(y, params))
-	result = minner.minimize(max_nfev=50000, xtol=1.0e-17)
+	result = minner.minimize(max_nfev=70000, xtol=1.0e-17)
 
 	forecast = None if result.success == False else ffunc(result.params, forecast_days)
 
-	return result, forecast
+	return x, y, result, forecast
 
-def copy_edo_shape(x, y, ct, cur, tag1, model, paramp=None, forecast_days=14):
+def copy_edo_shape(ct, cur, tag1, model, paramp=None, forecast_days=14):
 
-	tag2 = 'DEATHS' if tag1 == 'CASES' else 'CASES'
-	params1, func1, ffunc1 = get_edo_config(x, y, ct, cur, tag1, paramp)
-	params3, func2, ffunc2 = get_edo_config(x, y, ct, cur, tag2, paramp)
+	tag2 = 'accDeaths' if tag1 == 'accCases' else 'accCases'
+	x, y, params1, func1, ffunc1 = get_edo_config(ct, cur, tag1, paramp)
+	x, y, params3, func2, ffunc2 = get_edo_config(ct, cur, tag2, paramp)
 
 	if model is None:
 		params2 = params3
@@ -310,17 +343,17 @@ def copy_edo_shape(x, y, ct, cur, tag1, model, paramp=None, forecast_days=14):
 
 	forecast = None if result.success == False else ffunc1(result.params, forecast_days)
 
-	return result, forecast
+	return x, y, result, forecast
 
 
-def copy_edo_model(x, y, ct, g_id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text, paramp=None, forecast_days=14):
+def copy_edo_model(ct, g_id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text, paramp=None, forecast_days=14):
 	rname = ct.replace('_', ' ')
 	fdata = f'gpdata/dat/{ct}-{g_id}.dat'
 	fgplot = f'gpdata/{ct}-{g_id}.gp'
 	fsvg = f'svg/{ct}-{g_id}.svg'
 	freport = f'report/{ct}-{g_id}.html'
 
-	model, forecast = copy_edo_shape(x, y, ct, cur, tag, model_consolidated[0], paramp, forecast_days)
+	x, y, model, forecast = copy_edo_shape(ct, cur, tag, model_consolidated[0], paramp, forecast_days)
 
 	if model.success == False:
 		data_consolidated.append('n.a.')
@@ -333,7 +366,6 @@ def copy_edo_model(x, y, ct, g_id, cur, tag, ylabel, data_consolidated, model_co
 					f'{ylabel}', fdata, 2, f"{rname} data",
 					opt='colorsequence podo',
 					txt1='NO FIT AVAILABLE FOR THE CURRENT DATA', point=True)
-		#loggingg.info(f'run_edo_model: cannot fit edo for {ct}')
 	else:
 		chisqr = model.chisqr
 		data_consolidated.append(chisqr)
@@ -367,14 +399,17 @@ def copy_edo_model(x, y, ct, g_id, cur, tag, ylabel, data_consolidated, model_co
 			f.write(param_page(rname, table_info, table_stat, table_obs,fsvg))
 	return
 
-def run_edo_model(x, y, ct, g_id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text, paramp=None, forecast_days=14):
+def run_edo_model(ct, g_id, cur, tag, ylabel, data_consolidated, model_consolidated, curdate, text, paramp=None, forecast_days=14):
 	rname = ct.replace('_', ' ')
 	fdata = f'gpdata/dat/{ct}-{g_id}.dat'
+	fdatc = f'gpdata/dat/{ct}-{g_id+10}.dat'
 	fgplot = f'gpdata/{ct}-{g_id}.gp'
 	fsvg = f'svg/{ct}-{g_id}.svg'
+	fsvg1 = f'svg/{ct}-{g_id+10}.svg'
+	fsvg2 = f'svg/{ct}-{g_id+11}.svg'
 	freport = f'report/{ct}-{g_id}.html'
 
-	model, forecast = fit_edo_shape(x, y, ct, cur, tag, paramp=paramp, forecast_days=forecast_days)
+	x, y, model, forecast = fit_edo_shape(ct, cur, tag, paramp=paramp, forecast_days=forecast_days)
 
 	if model.success == False:
 		data_consolidated.append('n.a.')
@@ -387,12 +422,17 @@ def run_edo_model(x, y, ct, g_id, cur, tag, ylabel, data_consolidated, model_con
 					f'{ylabel}', fdata, 2, f"{rname} data",
 					opt='colorsequence podo',
 					txt1='NO FIT AVAILABLE FOR THE CURRENT DATA', point=True)
-		#loggingg.info(f'run_edo_model: cannot fit edo for {ct}')
 	else:
 		chisqr = model.chisqr
+		param = model.params
 		data_consolidated.append(chisqr)
 		model_consolidated.append(model)
-		nx = x if forecast is None else np.arange(len(forecast))
+		if tag == 'accCombined':
+			x = x[:len(x)//2]
+			y = y[:len(x)//2]
+			nx = x if forecast is None else np.arange(len(forecast)//2)
+		else:	
+			nx = x if forecast is None else np.arange(len(forecast))
 		dump_xyz_dat(fdata, nx, y, forecast)
 		dump_svg2D(fgplot, fsvg,
 					f'{text} for {rname} on {curdate}',
@@ -402,8 +442,21 @@ def run_edo_model(x, y, ct, g_id, cur, tag, ylabel, data_consolidated, model_con
 					f"{rname} data",
 					f'{text}',
 					opt='yrange [0<*:]',
-					txt1=f'EDO',
+					txt1=f'SIMDRQME',
 					txt2=f'𝛘² = {chisqr:9.2}')
+		S, Q, E, A, I, D, R, M = edo.eval_edo(param, 250)
+		pop = param['pop'].value
+		Sr = [x/pop for x in S]
+		Qr = [x/pop for x in Q]
+		Er = [x/pop for x in E]
+		Ar = [x/pop for x in A]
+		Ir = [x/pop for x in I]
+		Dr = [x/pop for x in D]
+		Rr = [x/pop for x in R]
+		Mr = [x/pop for x in M]
+		svg.dump_8_dat(fdatc, Sr, Qr, Er, Ar, Ir, Dr, Rr, Mr)
+		svg.dump_svg8D(fsvg1, fsvg2, fdatc, f'SIMDRQME Compartment Model for {rname} on {curdate}',
+						'days', 'perc. of pop.', ['S','Q','E','A','I','D','R','M'])
 
 	if model != None:		
 		with open(freport, 'w') as f:
@@ -418,7 +471,7 @@ def run_edo_model(x, y, ct, g_id, cur, tag, ylabel, data_consolidated, model_con
 			else:
 				for i, j in itertools.zip_longest(x, y, fillvalue='nan'):
 					table_obs += f'<tr><td>{i}</td><td>{j}</td><td>n.a.</td></tr>'
-			f.write(param_page(rname, table_info, table_stat, table_obs,fsvg))
+			f.write(param_page1(rname, table_info, table_stat, table_obs,fsvg,fsvg1,fsvg2))
 	return
 
 def run_rolling_average(x, y, ct, g_id, avgsize, curdate, ylabel):
@@ -557,12 +610,12 @@ def notebook_run_edo(ct, database, tag, g_id, forecast_days):
 	y = data['accCases'].values
 
 	ylabel = 'Acc Infected'
-	run_edo_model(x, y, ct, g_id, data, tag,
+	run_edo_model(ct, g_id, data, tag,
 					ylabel, data_consolidated, model_consolidated,
 					curdate, 'SIMDRQME Model on cases', forecast_days=forecast_days)
 	
-	tag2 = 'DEATHS' if tag == 'CASES' else 'CASES'
-	params1, func1, ffunc1 = get_edo_config(x, y, ct, data, tag2, None)
+	tag2 = 'accCases' if tag == 'accDeaths' else 'accDeaths'
+	x, y, params1, func1, ffunc1 = get_edo_config(ct, data, tag2, None)
 	fy = ffunc1(model_consolidated[0].params, forecast_days)
 	xd = data['eDay'].values
 	yd = data['accDeaths'].values
