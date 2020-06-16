@@ -34,6 +34,8 @@ build: $(BACKUP)
 	python3 createindex.py > $(SITEROOT)/index.html
 	python3 createindex-id.py 6 > $(SITEROOT)/edo.html
 	python3 createindex-id.py 8 > $(SITEROOT)/socnet.html
+	python3 createindex-id.py 16 > $(SITEROOT)/edo-comp1.html
+	python3 createindex-id.py 17 > $(SITEROOT)/edo-comp2.html
 	echo Done
 
 clean:
