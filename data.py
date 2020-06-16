@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import datetime as dt
+import math
 import os
 
 pop = {"SP": 45919049, "MG": 21168791, "RJ": 17264943, "BA": 14873064,
@@ -26,10 +27,15 @@ def brasilian_regions():
 	return l
 
 def clean_tcu_data(s):
+	if type(s) is float:
+		if s is np.nan or s is math.nan:
+			return s
+		else:
+			return int(s)
 	s = str(s)
 	s = s.split('(')[0]
 	s = s.replace('.', '')
-	return s
+	return int(s)
 
 def proccess_MS_unit(df):
 		state = df
@@ -113,6 +119,7 @@ def process_CDCEU(database, fetchdata=True):
 def process_Brazil_MS(df, database):
 	state = df[(df['regiao'] == 'Brasil') & (df['populacaoTCU2019'] == 210147125)]
 	state = state.sort_values(['data'])
+	assert len(state) != 0
 	data = list(np.diff(state.casosAcumulado, prepend=[0]))
 	cumdata = list(state.casosAcumulado.values)
 	death = list(np.diff(state.obitosAcumulado, prepend=[0]))
@@ -121,12 +128,12 @@ def process_Brazil_MS(df, database):
 	dates = state.data
 
 	size = len(cumdata)
+	assert size != 0
 	day = np.arange(size) + 1
 	values = {"data": dates, "eDay": day, "cases": data,
            "accCases": cumdata, "popData2018": population, "deaths": death, "accDeaths": cumdeath}
-
+	
 	cur = pd.DataFrame(values)
-
 	# Drop all with accumulated sum == 0, since they got before the first case
 	cur = cur[cur['accCases'] != 0]
 
@@ -176,7 +183,8 @@ def process_MS(database, fetchdata=True):
 		df = pd.read_csv('data/MS.csv')
 
 	df['data'] = pd.to_datetime(df['data'], format='%Y-%m-%d')
-
+	df['populacaoTCU2019'] = df['populacaoTCU2019'].apply(clean_tcu_data)
+	print(df)
 	process_Brazil_MS(df, database)
 
 	for ct in pop.keys():
