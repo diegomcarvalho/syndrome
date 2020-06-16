@@ -43,7 +43,7 @@ def main():
 
     paramp = pp.ParamProcessor.remote('memory-edo', var_names)
 
-    workload = dt.build_database(False)
+    workload = dt.build_database(True)
 
     workerlist = list()
 
