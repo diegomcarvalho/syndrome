@@ -280,15 +280,14 @@ def get_edo_config(ct, cur, tag, paramp):
 		else:
 			params.add('D0', value=y[0], vary=False,  min=0.75 * y[0], max=1.25*y[0])
 
+		params.add('N0', value=1.25*y[-1], min=0, max=pop)
 		params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop - a*y[0]+i*y[0] - a*y[0] - i*y[0])
 		params.add('R0', value=0, vary=False)
 		params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0.0)
 		params.add('A0', value=a*y[0], vary=False, min=0.0)
 		params.add('I0', value=i*y[0], vary=False, min=0.0)
 		params.add('M0', value=0, vary=False, min=0.0)
-		params.add('Q0', value=0.6*y[-1], vary=True, min=0, max=1.0*pop)
-		#params.add('Q0', expr="pop-S0-E0-A0-I0-D0-R0-M0", min=0.0)
-
+		params.add('Q0', expr="N0-S0-E0-A0-I0-D0-R0-M0", min=0.0)
 		params.add('pop', value=pop, min=0, vary=False)
 		params.add('day', value=days, min=0, vary=False)
 
@@ -301,15 +300,16 @@ def get_edo_config(ct, cur, tag, paramp):
 		if y[0] < 5:
 			params.add('D0', value=y[0], vary=False, min=0)
 		else:
-			params.add('D0', value=y[0], vary=False,  min=0.75 * y[0], max=1.25*y[0])
+			params.add('D0', value=y[0], vary=False, min=0.75 * y[0], max=1.25 * y[0])
+
+		params.add('N0', value=1.25*y[-1], min=0, max=pop)
 		params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop - a*y[0]+i*y[0] - a*y[0] - i*y[0])
 		params.add('R0', value=0, vary=False)
 		params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0)
 		params.add('A0', value=a*y[0], vary=False, min=0)
 		params.add('I0', value=i*y[0], vary=False, min=0)
 		params.add('M0', value=0, vary=False, min=0)
-		params.add('Q0', value=0.6*y[-1], vary=True, min=0, max=1.0*pop)
-		#params.add('Q0', expr="pop-S0-E0-A0-I0-D0-R0-M0", min=0.0)
+		params.add('Q0', expr="N0-S0-E0-A0-I0-D0-R0-M0", min=0.0)
 
 		params.add('day', value=days, min=0, vary=False)
 
