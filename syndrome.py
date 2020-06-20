@@ -5,6 +5,8 @@ import data as dt
 import countryprocessor as cp
 import paramprocessor as pp
 
+program = [5, 6]
+
 def printx(y, x, s): 
     print(' ' * x, s)
     return
@@ -43,7 +45,7 @@ def main():
 
     paramp = pp.ParamProcessor.remote('memory-edo', var_names)
 
-    workload = dt.build_database()
+    workload = dt.build_database(False)
 
     workerlist = list()
 
@@ -60,7 +62,7 @@ def main():
 
     print(f'Workload is {len(workload)}')
 
-    work_chunk = submit_work(workload, filter_list, workerlist, paramp, [0,1,2,3,4,5,6,7,9], cpu+4)
+    work_chunk = submit_work(workload, filter_list, workerlist, paramp, program, cpu+4)
 
     print(f'Submitting {work_chunk} tasks ({len(workload)}/{len(workerlist)} to go).')
     
@@ -90,7 +92,7 @@ def main():
             workerlist = not_ready
 
             if len(workerlist) < cpu:
-                submit_work(workload, filter_list, workerlist, paramp, [0,1,2,3,4,5,6,7,9], cpu - len(workerlist))
+                submit_work(workload, filter_list, workerlist, paramp, program, cpu - len(workerlist))
             f.flush()
             time.sleep(15)
             loops += 1

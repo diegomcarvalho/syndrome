@@ -96,7 +96,7 @@ import tempfile
 
 def dump_svg8D(svgfile1, svgfile2, datafile,
 				title, xlabel, ylabel,
-				label, opt=None, txt1=None, txt2=None):
+				label, opt=None, txt1=None, txt2=None, pop=None):
 
 	filename = 'f1.gp'
 	# col: 2 3 4 5 6 7 8 9
@@ -113,10 +113,14 @@ def dump_svg8D(svgfile1, svgfile2, datafile,
 		f.write(f"set title'{title}'\n")
 		f.write(f"set xlabel '{xlabel}'\n")
 		f.write(f"set ylabel '{ylabel}'\n")
-		if txt1 != None:
+		if pop is not None:
+			pop = int(pop)
+			f.write(f'set ytics nomirror')
+			f.write(f'set y2tics 0, {pop//5}')
+		if txt1 is not None:
 			f.write(
 				f"set label '{txt1}' at screen 0.2,0.7 font 'Roboto Italic, 13'\n")
-		if txt2 != None:
+		if txt2 is not None:
 			f.write(
 				f"set label '{txt2}' at screen 0.2,0.75 font 'Roboto Italic, 13'\n")
 		f.write('set label "2020 © R.Barbastefano, D.Carvalho, M.C.Lippi, D.Pastore" ')
