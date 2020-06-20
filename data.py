@@ -50,7 +50,7 @@ def proccess_MS_unit(df):
 		size = len(cumdata)
 		day = np.arange(size) + 1
 		values = {"data": dates, "eDay": day, "cases": data,
-			"accCases": cumdata, "popData2018": population, "deaths": death, "accDeaths": cumdeath}
+			"accCases": cumdata, "popData2019": population, "deaths": death, "accDeaths": cumdeath}
 
 		cur = pd.DataFrame(values)
 
@@ -58,7 +58,7 @@ def proccess_MS_unit(df):
 		cur = cur[cur['accCases'] != 0]
 
 		curdate = f"{cur['data'].iloc[-1]}".replace('00:00:00', '')
-		popdata = int(cur['popData2018'].iloc[-1])
+		popdata = int(cur['popData2019'].iloc[-1])
 		accases = int(cur['accCases'].iloc[-1])
 		cur = cur.reset_index()
 		cur = cur.drop('index', axis=1)
@@ -73,11 +73,14 @@ def proccess_MS_unit(df):
 def process_CDCEU(database, fetchdata=True):
 
 	if fetchdata:
+		print('Fetching EU CDC Data')
 		df = pd.read_csv('https://opendata.ecdc.europa.eu/covid19/casedistribution/csv')
 		df.to_csv('data/ECDC.csv')
 	else:
+		print('Reading EU CDC Data')
 		df = pd.read_csv('data/ECDC.csv')
 
+	print('Cleaning Data')
 	for ct in df.countriesAndTerritories.unique():
 		country_name = ct.replace('ç', 'c')
 
@@ -94,7 +97,7 @@ def process_CDCEU(database, fetchdata=True):
 			cur = cur[cur['accCases'] != 0]
 
 			curdate = f"{cur['year'].iloc[-1]:04}-{cur['month'].iloc[-1]:02}-{cur['day'].iloc[-1]:02}"
-			pop = int(cur['popData2018'].iloc[-1])
+			pop = int(cur['popData2019'].iloc[-1])
 			accases = int(cur['accCases'].iloc[-1])
 		except:
 			continue
@@ -111,7 +114,7 @@ def process_CDCEU(database, fetchdata=True):
 		# Calculate the rolling sum
 		cur['newcasesroll'] = cur['cases'].rolling(7).sum()
 		cur['newdeathsroll'] = cur['deaths'].rolling(7).sum()
-
+		print(f'Adding {country_name}')
 		database[country_name] = { 'DATE': curdate, 'DATA': cur.to_dict(), 'ACCASES': accases, 'POPULATION': pop }
 	return
 
@@ -131,14 +134,14 @@ def process_Brazil_MS(df, database):
 	assert size != 0
 	day = np.arange(size) + 1
 	values = {"data": dates, "eDay": day, "cases": data,
-           "accCases": cumdata, "popData2018": population, "deaths": death, "accDeaths": cumdeath}
+           "accCases": cumdata, "popData2019": population, "deaths": death, "accDeaths": cumdeath}
 	
 	cur = pd.DataFrame(values)
 	# Drop all with accumulated sum == 0, since they got before the first case
 	cur = cur[cur['accCases'] != 0]
 
 	curdate = f"{cur['data'].iloc[-1]}".replace('00:00:00', '')
-	popdata = int(cur['popData2018'].iloc[-1])
+	popdata = int(cur['popData2019'].iloc[-1])
 	accases = int(cur['accCases'].iloc[-1])
 
 	# Reset the index, so index + 1 is the epidemilogical day
@@ -184,7 +187,6 @@ def process_MS(database, fetchdata=True):
 
 	df['data'] = pd.to_datetime(df['data'], format='%Y-%m-%d')
 	df['populacaoTCU2019'] = df['populacaoTCU2019'].apply(clean_tcu_data)
-	print(df)
 	process_Brazil_MS(df, database)
 
 	for ct in pop.keys():
@@ -200,7 +202,7 @@ def process_MS(database, fetchdata=True):
 		size = len(cumdata)
 		day = np.arange(size) + 1
 		values = {"data": dates, "eDay": day, "cases": data,
-			"accCases": cumdata, "popData2018": population, "deaths": death, "accDeaths": cumdeath}
+			"accCases": cumdata, "popData2019": population, "deaths": death, "accDeaths": cumdeath}
 
 		cur = pd.DataFrame(values)
 
@@ -208,7 +210,7 @@ def process_MS(database, fetchdata=True):
 		cur = cur[cur['accCases'] != 0]
 
 		curdate = f"{cur['data'].iloc[-1]}".replace('00:00:00', '')
-		popdata = int(cur['popData2018'].iloc[-1])
+		popdata = int(cur['popData2019'].iloc[-1])
 		accases = int(cur['accCases'].iloc[-1])
 
 		# Check if there is any data...
@@ -234,6 +236,7 @@ def build_database(fetchdata=True):
 	process_MS(global_database, fetchdata)
 	process_CDCEU(global_database, fetchdata)
 
+	print(f'Returning {len(global_database)}')
 	return global_database
 
 def process_municipio_MS(df, database, municipio):
@@ -249,7 +252,7 @@ def process_municipio_MS(df, database, municipio):
 	size = len(cumdata)
 	day = np.arange(size) + 1
 	values = {"data": dates, "eDay": day, "cases": data,
-           "accCases": cumdata, "popData2018": population, "deaths": death, "accDeaths": cumdeath}
+           "accCases": cumdata, "popData2019": population, "deaths": death, "accDeaths": cumdeath}
 
 	cur = pd.DataFrame(values)
 
@@ -257,7 +260,7 @@ def process_municipio_MS(df, database, municipio):
 	cur = cur[cur['accCases'] != 0]
 
 	curdate = f"{cur['data'].iloc[-1]}".replace('00:00:00', '')
-	popdata = int(cur['popData2018'].iloc[-1])
+	popdata = int(cur['popData2019'].iloc[-1])
 	accases = int(cur['accCases'].iloc[-1])
 
 	# Reset the index, so index + 1 is the epidemilogical day

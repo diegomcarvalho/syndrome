@@ -50,7 +50,7 @@ def model_jit(w, t, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13):
     return dwdt
 
 
-def rodamodelo2dia(vetor_condicao, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, step=50):
+def rodamodelo2dia(vetor_condicao, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, step=100):
     #timespan
     t = np.linspace(0, 1, step)
 #resolucao

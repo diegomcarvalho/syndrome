@@ -218,7 +218,7 @@ def get_edo_config(ct, cur, tag, paramp):
 		ffunct = edo.eval_edo_D
 	elif tag == 'perCases':
 		x = list(cur['eDay'])
-		y = list(cur['accCases']/cur['popData2018'])
+		y = list(cur['accCases']/cur['popData2019'])
 		days = len(x)
 		residual = edo.residual_edo_D
 		ffunct = edo.eval_edo_D
@@ -238,7 +238,7 @@ def get_edo_config(ct, cur, tag, paramp):
 	if paramp is not None:
 		future = paramp.get_param.remote(ct, tag)
 
-	pop = int(cur['popData2018'].iloc[-1])
+	pop = int(cur['popData2019'].iloc[-1])
 	a = 1.2
 	i = 1.8
 	gammaD = 0.14
@@ -252,66 +252,64 @@ def get_edo_config(ct, cur, tag, paramp):
 
 	if len(params.items()) == 0:
 		params = lm.Parameters()
-		params.add('beta', value=9.33E-08, min=0, max=40E-4)
+		params.add('beta',     value=0.000012,  min=0.000,   max=1.00, vary=True)
+		params.add('rho',      value=0.550,     min=0.550,   max=0.60, vary=True)
+		params.add('p',        value=0.001,     min=0.001,   max=1.00, vary=True)
+		params.add('epsilonA', value=0.000,     min=0.0100,  max=4.00, vary=True)
+		params.add('epsilonI', value=0.200,     min=0.0100,  max=4.00, vary=True)
+		params.add('cD',       value=1.400,     min=1.100,   max=1.70, vary=True)
+		params.add('gammaI',   value=1/22,      min=1/42,    max=1/14, vary=True)
+		params.add('gammaD',   value=1/22,      min=1/42,    max=1/14, vary=True)
+		params.add('delta',    value=0.0001,    min=0.0000,  max=1.00, vary=True)
 
-		params.add('theta', value=8/19, vary=False)
-		params.add('p', value=0.15, min=0.001, max=1.0)
-		params.add('sigma', value=1/5.1, min=0, vary=False)
-		params.add('rho', value=0.55, min=0.55, max=0.60, vary=True)
+		params.add('theta',   value=8/19,     vary=False)
+		params.add('sigma',   value=1/5.1,    vary=False)
+		params.add('lambda0', value=1/len(y), vary=False)
+		params.add('gammaA',  value=1/14,     vary=False)
 
-		params.add('epsilonA', value=0.2, min=0.01, max=1.0)
-		params.add('epsilonI', value=0.2, min=0.01, max=1.0)
-
-		params.add('lambda0', value=1 / len(y), vary=False)
-
-		params.add('gammaA', value=1/14, vary=False)
-		params.add('gammaI', value=1/22, min=1/42, max=1/14)
-		params.add('gammaD', value=1/22, min=1/42, max=1/14)
-
-		params.add('cD', value=1.4, min=1.1, max=1.7)
 		params.add('dD', expr=f'gammaD*{death_rate}/(1-{death_rate})')
 		params.add('dI', expr='cD*dD')
 
-		params.add('delta', value=0.0001, min=0, max=1.0)
+		params.add('pop', value=pop, vary=False)
 
-		params.add('pop', value=pop, min=0, vary=False)
-		if y[0] < 5:
-			params.add('D0', value=y[0], vary=False, min=0)
-		else:
-			params.add('D0', value=y[0], vary=False,  min=0.75 * y[0], max=1.25*y[0])
+		params.add('N0', value=1.25*y[-1], min=0, max=pop,            vary=True)
+		params.add('S0', value=0,          min=0, max=0.5*pop - 2 * y[0], vary=True)
 
-		params.add('N0', value=1.25*y[-1], min=0, max=pop)
-		params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop - a*y[0]+i*y[0] - a*y[0] - i*y[0])
-		params.add('R0', value=0, vary=False)
-		params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0.0)
-		params.add('A0', value=a*y[0], vary=False, min=0.0)
-		params.add('I0', value=i*y[0], vary=False, min=0.0)
-		params.add('M0', value=0, vary=False, min=0.0)
+		params.add('R0', value=0,    vary=False)
+		params.add('E0', value=0,    vary=False)
+		params.add('A0', value=0,    vary=False)
+		params.add('I0', value=y[0], vary=False)
+		params.add('D0', value=y[0], vary=False)
+		params.add('M0', value=0,    vary=False)
 		params.add('Q0', expr="N0-S0-E0-A0-I0-D0-R0-M0", min=0.0)
-		params.add('pop', value=pop, min=0, vary=False)
-		params.add('day', value=days, min=0, vary=False)
+
+		params.add('pop', value=pop,  vary=False)
+		params.add('day', value=days, vary=False)
 
 	else:
+		params.add('theta',   value=8/19,     vary=False)
+		params.add('sigma',   value=1/5.1,    vary=False)
 		params.add('lambda0', value=1/len(y), vary=False)
-		params.add('gammaD', value=1/22, min=1/42, max=1/14)
+		params.add('gammaA',  value=1/14,     vary=False)
+
 		params.add('dD', expr=f'gammaD*{death_rate}/(1-{death_rate})')
+		params.add('dI', expr='cD*dD')
 
-		params.add('pop', value=pop, min=0, vary=False)
-		if y[0] < 5:
-			params.add('D0', value=y[0], vary=False, min=0)
-		else:
-			params.add('D0', value=y[0], vary=False, min=0.75 * y[0], max=1.25 * y[0])
+		params.add('pop', value=pop, vary=False)
 
-		params.add('N0', value=1.25*y[-1], min=0, max=pop)
-		params.add('S0', value=1.2*y[-1], min=1.2*y[-1], max=1.0*pop - a*y[0]+i*y[0] - a*y[0] - i*y[0])
-		params.add('R0', value=0, vary=False)
-		params.add('E0', value=a*y[0]+i*y[0], vary=False, min=0)
-		params.add('A0', value=a*y[0], vary=False, min=0)
-		params.add('I0', value=i*y[0], vary=False, min=0)
-		params.add('M0', value=0, vary=False, min=0)
+		params.add('N0', value=1.25*y[-1], min=0, max=pop,            vary=True)
+		params.add('S0', value=0,          min=0, max=0.5*pop - 2 * y[0], vary=True)
+
+		params.add('R0', value=0,    vary=False)
+		params.add('E0', value=0,    vary=False)
+		params.add('A0', value=0,    vary=False)
+		params.add('I0', value=y[0], vary=False)
+		params.add('D0', value=y[0], vary=False)
+		params.add('M0', value=0,    vary=False)
 		params.add('Q0', expr="N0-S0-E0-A0-I0-D0-R0-M0", min=0.0)
 
-		params.add('day', value=days, min=0, vary=False)
+		params.add('pop', value=pop,  vary=False)
+		params.add('day', value=days, vary=False)
 
 	return x, y, params, residual, ffunct
 
@@ -320,7 +318,7 @@ def fit_edo_shape(ct, cur, tag, paramp=None, forecast_days=14):
 	x, y, params, func, ffunc = get_edo_config(ct, cur, tag, paramp)
 
 	minner = lm.Minimizer(func, params, fcn_args=(y, params))
-	result = minner.minimize(max_nfev=300000, xtol=1.0e-17)
+	result = minner.minimize(max_nfev=150000, method='powell')
 
 	forecast = None if result.success == False else ffunc(result.params, forecast_days)
 
