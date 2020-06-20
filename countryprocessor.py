@@ -64,10 +64,10 @@ def process_country(ct, datadict, curdate, paramp, program):
 		model_consolidated.append(mdc[0])
 		if mdc[0] is not None:
 			paramp.set_param.remote(ct, tag, mdc[0].params)
-		
-		# Place holder for EDO model
-		fit.copy_edo_model(ct, g_id+1, data, 'accDeaths', 'Acc deaths', data_consolidated, mdc, curdate, 'SIMDRQME Model on deaths', paramp)
-		model_consolidated.append(mdc[1])
+		if g_id + 1 in program:
+			# Place holder for EDO model
+			fit.copy_edo_model(ct, g_id+1, data, 'accDeaths', 'Acc deaths', data_consolidated, mdc, curdate, 'SIMDRQME Model on deaths', paramp)
+			model_consolidated.append(mdc[1])
 
 	# Place holder for SOCNET model
 	#fit.get_model_socnet(ct, 8, curdate)

@@ -70,33 +70,33 @@ if g_id < 9:
         name = BR_states[i]
         name = name.replace('_', ' ')
         print(
-            f'<tr><td><div class="w3-tiny w3-center">{name}</div><a href="web/{BR_states[i]}.html"><img src="web/svg/{BR_states[i]}-{g_id}.svg" width="150" height="150"/></a></td>')
+            f'<tr><td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{BR_states[i]}-{g_id}.html"><img src="web/svg/{BR_states[i]}-{g_id}.svg" width="150" height="150"/></a></td>')
         name = BR_states[i+1]
         name = name.replace('_', ' ')
         print(
-            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/{BR_states[i+1]}.html"><img src="web/svg/{BR_states[i+1]}-{g_id}.svg" width="150" height="150"/></a></td>')
+            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{BR_states[i+1]}-{g_id}.html"><img src="web/svg/{BR_states[i+1]}-{g_id}.svg" width="150" height="150"/></a></td>')
         name = BR_states[i+2]
         name = name.replace('_', ' ')
         print(
-            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/{BR_states[i+2]}.html"><img src="web/svg/{BR_states[i+2]}-{g_id}.svg" width="150" height="150"/></a></td>')
+            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{BR_states[i+2]}-{g_id}.html"><img src="web/svg/{BR_states[i+2]}-{g_id}.svg" width="150" height="150"/></a></td>')
         name = BR_states[i+3]
         name = name.replace('_', ' ')
         print(
-            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/{BR_states[i+3]}.html"><img src="web/svg/{BR_states[i+3]}-{g_id}.svg" width="150" height="150"/></a></td>')
+            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{BR_states[i+3]}-{g_id}.html"><img src="web/svg/{BR_states[i+3]}-{g_id}.svg" width="150" height="150"/></a></td>')
         name = BR_states[i+4]
         name = name.replace('_', ' ')
         print(
-            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/{BR_states[i+4]}.html"><img src="web/svg/{BR_states[i+4]}-{g_id}.svg" width="150" height="150"/></a></td></tr>')
+            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{BR_states[i+4]}-{g_id}.html"><img src="web/svg/{BR_states[i+4]}-{g_id}.svg" width="150" height="150"/></a></td></tr>')
 else:
     for i in range(0, len(BR_states), 2):
         name = BR_states[i]
         name = name.replace('_', ' ')
         print(
-            f'<tr><td><div class="w3-tiny w3-center">{name}</div><a href="web/{BR_states[i]}.html"><img src="web/svg/{BR_states[i]}-{g_id}.svg" width="375" height="150"/></a></td>')
+            f'<tr><td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{BR_states[i]}-{g_id}.html"><img src="web/svg/{BR_states[i]}-{g_id}.svg" width="375" height="150"/></a></td>')
         name = BR_states[i+1]
         name = name.replace('_', ' ')
         print(
-            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/{BR_states[i+1]}.html"><img src="web/svg/{BR_states[i+1]}-{g_id}.svg" width="375" height="150"/></a></td></tr>')
+            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{BR_states[i+1]}-{g_id}.html"><img src="web/svg/{BR_states[i+1]}-{g_id}.svg" width="375" height="150"/></a></td></tr>')
 
 
 if g_id < 9:
@@ -119,26 +119,26 @@ if g_id < 9:
     for i in range(0, len(W_regions), 5):
         name = clean_string(W_regions[i])
         print(
-            f'<tr><td><div class="w3-tiny w3-center">{name}</div><a href="web/{W_regions[i]}.html"><img src="web/svg/{W_regions[i]}-{g_id}.svg" width="150" height="150"/></a></td>')
+            f'<tr><td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{W_regions[i]}-{g_id}.html"><img src="web/svg/{W_regions[i]}-{g_id}.svg" width="150" height="150"/></a></td>')
         name = clean_string(W_regions[i+1])
         print(
-            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/{W_regions[i+1]}.html"><img src="web/svg/{W_regions[i+1]}-{g_id}.svg" width="150" height="150"/></a></td>')
+            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{W_regions[i+1]}-{g_id}.html"><img src="web/svg/{W_regions[i+1]}-{g_id}.svg" width="150" height="150"/></a></td>')
         name = clean_string(W_regions[i+2])
         print(
-            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/{W_regions[i+2]}.html"><img src="web/svg/{W_regions[i+2]}-{g_id}.svg" width="150" height="150"/></a></td>')
+            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{W_regions[i+2]}-{g_id}.html"><img src="web/svg/{W_regions[i+2]}-{g_id}.svg" width="150" height="150"/></a></td>')
         name = clean_string(W_regions[i+3])
         print(
-            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/{W_regions[i+3]}.html"><img src="web/svg/{W_regions[i+3]}-{g_id}.svg" width="150" height="150"/></a></td>')
+            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{W_regions[i+3]}-{g_id}.html"><img src="web/svg/{W_regions[i+3]}-{g_id}.svg" width="150" height="150"/></a></td>')
         name = clean_string(W_regions[i+4])
         print(
-            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/{W_regions[i+4]}.html"><img src="web/svg/{W_regions[i+4]}-{g_id}.svg" width="150" height="150"/></a></td></tr>')
+            f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{W_regions[i+4]}-{g_id}.html"><img src="web/svg/{W_regions[i+4]}-{g_id}.svg" width="150" height="150"/></a></td></tr>')
 else:
     for i in range(0, len(W_regions), 2):
         name = clean_string(W_regions[i])
         print(
-            f'<tr><td><div class="w3-tiny w3-center">{name}</div><a href="web/{W_regions[i]}.html"><img src="web/svg/{W_regions[i]}-{g_id}.svg" width="375" height="150"/></a></td>')
+            f'<tr><td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{W_regions[i]}-{g_id}.html"><img src="web/svg/{W_regions[i]}-{g_id}.svg" width="375" height="150"/></a></td>')
         name = clean_string(W_regions[i+1])
-        print(f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/{W_regions[i+1]}.html"><img src="web/svg/{W_regions[i+1]}-{g_id}.svg" width="375" height="150"/></a></td></tr>')
+        print(f'<td><div class="w3-tiny w3-center">{name}</div><a href="web/report/{W_regions[i+1]}-{g_id}.html"><img src="web/svg/{W_regions[i+1]}-{g_id}.svg" width="375" height="150"/></a></td></tr>')
 
 for i in f.readlines():
     print(i)
