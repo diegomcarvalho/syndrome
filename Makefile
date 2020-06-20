@@ -27,10 +27,11 @@ $(BACKUP):
 backup:
 	echo Creating $(BACKUP)
 	mkdir -p $(BACKUP)
-	mv $(SITEROOT)/index.html $(SITEROOT)/edo.html $(SITEROOT)/socnet.html $(SITEROOT)/web $(SITEROOT)/$(YESTERDAY)
+	mv $(SITEROOT)/index.html $(SITEROOT)/param.csv $(SITEROOT)/processed.log $(SITEROOT)/edo.html $(SITEROOT)/socnet.html $(SITEROOT)/web $(SITEROOT)/$(YESTERDAY)
 
 build: $(BACKUP) 
-	cp -r web $(SITEROOT)
+	bash metaparam.sh
+	cp -r web log/param.csv metaparam.csv log/processed.log $(SITEROOT)
 	python3 createindex.py > $(SITEROOT)/index.html
 	python3 createindex-id.py 6 > $(SITEROOT)/edo.html
 	python3 createindex-id.py 8 > $(SITEROOT)/socnet.html
