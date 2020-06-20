@@ -43,7 +43,7 @@ def main():
 
     paramp = pp.ParamProcessor.remote('memory-edo', var_names)
 
-    workload = dt.build_database(True)
+    workload = dt.build_database(False)
 
     workerlist = list()
 
@@ -52,9 +52,10 @@ def main():
         cpu += int(node['Resources']['CPU'])
 
 
-    #filter_list = [ 'Albania', 'Austria', 'Australia', 'Bahrain']
+    filter_list = ['Distrito_Federal', 'Goias', 'Sao_Paulo', 'Egypt', 'Ethiopia', 'France',
+ 'Guatemala', 'Japan', 'Kuwait', 'Libya', 'Malawi',  'Mauritania', 'Nepal', 'Switzerland', 'Venezuela']
     #filter_list = dt.brasilian_regions()
-    filter_list = workload.keys()
+    #filter_list = workload.keys()
 
     apply_filter(workload, filter_list)
 

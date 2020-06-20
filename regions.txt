@@ -1,0 +1,4 @@
+['Amazonas', 'Brasil', 'Distrito_Federal', 'Goias', 'Mato_Grosso_do_Sul', 'Parana', 'Rondonia', 'Sao_Paulo', 'Sergipe',
+ 'Afghanistan', 'Armenia', 'Bangladesh', 'Brazil', 'Cameroon', 'Canada', 'Chile', 'Ecuador', 'Egypt', 'Ethiopia', 'France',
+ 'Gabon', 'Guatemala', 'Indonesia', 'Japan', 'Mauritania', 'Moldova', 'Pakistan', 'Peru', 'Russia', 'Saudi_Arabia', 'South_Africa',
+ 'Turkey', 'United_States_of_America']

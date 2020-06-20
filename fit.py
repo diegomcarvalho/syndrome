@@ -259,8 +259,8 @@ def get_edo_config(ct, cur, tag, paramp):
 		params.add('sigma', value=1/5.1, min=0, vary=False)
 		params.add('rho', value=0.55, min=0.55, max=0.60, vary=True)
 
-		params.add('epsilonA', value=0, min=0, max=1.0)
-		params.add('epsilonI', value=0.2, min=0.1, max=1.0)
+		params.add('epsilonA', value=0.2, min=0.01, max=1.0)
+		params.add('epsilonI', value=0.2, min=0.01, max=1.0)
 
 		params.add('lambda0', value=1 / len(y), vary=False)
 
@@ -320,7 +320,7 @@ def fit_edo_shape(ct, cur, tag, paramp=None, forecast_days=14):
 	x, y, params, func, ffunc = get_edo_config(ct, cur, tag, paramp)
 
 	minner = lm.Minimizer(func, params, fcn_args=(y, params))
-	result = minner.minimize(max_nfev=70000, xtol=1.0e-17)
+	result = minner.minimize(max_nfev=300000, xtol=1.0e-17)
 
 	forecast = None if result.success == False else ffunc(result.params, forecast_days)
 
