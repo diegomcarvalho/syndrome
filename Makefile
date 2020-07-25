@@ -1,5 +1,5 @@
 YESTERDAY=$(shell date --date=yesterday +%Y%m%d)
-SITEROOT=/storage/covid/carvalho
+SITEROOT=/storage/covid/carvalho/new
 BACKUP=$(SITEROOT)/$(YESTERDAY)
 
 all:
