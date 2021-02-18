@@ -11,3 +11,4 @@ memory-edo/**
 website
 param.html
 data/ECDC.csv
+socnet/algo/.vscode/*

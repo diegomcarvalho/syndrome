@@ -5,45 +5,54 @@
 #include <random>
 #include <vector>
 
-enum class Status
-{
-    recovered,
-    sick,
-    severe,
-    death
-};
 
-struct Individual
+const uint8_t fACTIVE = 0x01;
+const uint8_t fQUARANTINE = 0x01 << 1;
+
+class Subject
 {
-    int contamination_day;
-    int parent;
-    bool active;
-    int days_of_infection;
-    int decendants;
-    Status status;
-    bool quarantine_status;
-    Individual(int c = 0,
-               int p = -1,
-               bool a = false,
-               int doi = 0,
-               Status s = Status::recovered,
-               bool q = false)
-      : contamination_day(c)
+  private:
+  public:
+    uint8_t flags;
+    uint8_t days_of_infection;
+    uint32_t parent;
+    uint16_t contamination_day;
+    uint8_t decendants;
+
+    inline const bool is_active() { return this->flags & fACTIVE; }
+    inline void set_active() { this->flags ^= fACTIVE; }
+    inline void clear_active() { this->flags &= ~fACTIVE; }
+    inline const bool is_quarantined() { return this->flags & fQUARANTINE; }
+    inline void set_quarantined() { this->flags ^= fQUARANTINE; }
+    inline void clear_quarantined() { this->flags &= ~fQUARANTINE; }
+	inline void set_active_and_quarantine( bool a, bool q  ) { this->flags = uint8_t(a) | (uint8_t(q) << 1); }
+    Subject(const int doi = 0,
+			const int p = -1,
+			const int c = 0,
+			const bool a = false,
+			const bool q = false)
+      : days_of_infection(doi)
       , parent(p)
-      , active(a)
-      , days_of_infection(doi)
-      , decendants(0)
-      , status(s)
-      , quarantine_status(q)
-    {}
+      , contamination_day(c)
+	  , decendants(0)
+    {
+        this->flags = uint8_t(a) | (uint8_t(q) << 1);
+    }
+    Subject(const bool a, const bool q)
+      : days_of_infection(0)
+      , parent(-1)
+      , contamination_day(0)
+	  , decendants(0)
+    {
+        this->flags = uint8_t(a) | (uint8_t(q) << 1);
+    }
 };
 
 class Population
 {
-    std::mt19937_64 gen;
+    std::mt19937_64 my_gen;
     int first_ind;
-    // std::vector<std::shared_ptr<Individual>> population;
-    std::vector<Individual*> population;
+    std::vector<Subject> population;
 
   public:
     Population(const int expected_size = 1000) { 
@@ -51,18 +60,20 @@ class Population
         first_ind = 0;
     }
     ~Population() { reset_population(); }
-    Individual* operator[](const int index) { return population[index]; }
-    void new_individual(const int day, const int parent, const bool active, const Status st, const bool quarantine) {
-        population.push_back(new Individual(day, parent, active, 0, st, quarantine));
+    Subject& operator[](const int index) { return population[index]; }
+    void new_subject(const int day, const int parent, const int cDay, const bool active, const bool quarantine) {
+        population.push_back(Subject(day, parent, cDay, active, quarantine));
     }
-    void seed_individual(const bool active, const int doi, const Status st, const bool quarantine) {
-        population.push_back(new Individual(0, -1, active, doi, st, quarantine));
+    void seed_subject(const bool active, const bool quarantine) {
+        population.push_back(Subject(active, quarantine));
+
     }
     void reset_population();
     void seed_infected(const int i0active, const int i0recovered, const double percentage);
     void seed_infected(const std::vector<int>& i0active, const std::vector<int>& i0recovered, const double percentage);
     unsigned int size() const { return population.size(); }
-    int first_individual() const { return first_ind; }
+    int first_subject() const { return first_ind; }
     void move_first(const int id) { first_ind = id; }
 };
+
 #endif // POPULATION_HPP

@@ -17,25 +17,11 @@ calculate_infection(const int duration,
                     const double gamma,
                     const double percentage_in_quarantine);
 
-std::vector<std::vector<double>>
-calculate_infected_varying(
-  const int duration,
-  const int susceptible_max_size,
-  const std::vector<int>&  i0active,
-  const std::vector<int>&  i0recovered,
-  const int samples,
-  const int max_transmission_day,
-  const int max_in_quarantine,
-  const double gamma,
-  const std::vector<double>& percentage_in_quarantine,
-  const bool recont);
 
 PYBIND11_MODULE(calculate, m)
 {
-    m.doc() =
-      "calculate_infection implemented in C++"; // optional module docstring
+    m.doc() = "calculate_infection implemented in C++"; // optional module docstring
 
     m.def("init_module", &init_module, "Initialize the Random Number Generator.");
     m.def("calculate_infection", &calculate_infection, "Simulate the Social Network Model for SIRE dynamics.");
-    m.def("calculate_infected_varying", &calculate_infected_varying, "Simulate the Social Network Model for SIRE dynamics.");
 }
