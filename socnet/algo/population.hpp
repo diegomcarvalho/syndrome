@@ -69,8 +69,8 @@ class Population
 
     }
     void reset_population();
-    void seed_infected(const int i0active, const int i0recovered, const double percentage);
-    void seed_infected(const std::vector<int>& i0active, const std::vector<int>& i0recovered, const double percentage);
+    void seed_infected(const int i0active, const int i0recovered, const double percentage, const int max_transmission_day);
+    void seed_infected(const std::vector<int>& i0active, const std::vector<int>& i0recovered, const double percentage, const int max_transmission_day);
     unsigned int size() const { return population.size(); }
     int first_subject() const { return first_ind; }
     void move_first(const int id) { first_ind = id; }
