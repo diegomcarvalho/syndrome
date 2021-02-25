@@ -307,8 +307,8 @@ calculate_infection(const int duration,
                                                  dis,
                                                  i_dis));
 
-        for (auto it = begin(fut); it != end(fut); ++it) {
-            auto ret = it->get();
+        for (auto & it : fut) {
+            auto ret = it.get();
             for (int d = 0; d < duration; d++) {
                 infected_stat.add_value(d, ret[0][d]);
                 susceptible_stat.add_value(d, ret[3][d]);
@@ -374,8 +374,8 @@ calculate_infection_with_vaccine(const int duration,
                                                  dis,
                                                  i_dis));
 
-        for (auto it = begin(fut); it != end(fut); ++it) {
-            auto ret = it->get();
+        for (auto & it : fut) {
+            auto ret = it.get();
             for (int d = 0; d < duration; d++) {
                 infected_stat.add_value(d, ret[0][d]);
                 susceptible_stat.add_value(d, ret[3][d]);
