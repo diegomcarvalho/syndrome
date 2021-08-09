@@ -3,30 +3,25 @@
 void
 Population::reset_population()
 {
-
-    //for (unsigned int ui = 0; ui < population.size(); ui++)
-    //    delete population[ui];
     population.clear();
-
     return;
 }
 
 void
-Population::seed_infected(
-    const int i0active, 
-    const int i0recovered, 
-    const double percentage,
-    const int max_transmission_day)
+Population::seed_infected(const int i0active,
+                          const int i0recovered,
+                          const double percentage,
+                          const int max_transmission_day)
 {
     std::uniform_real_distribution<> dis(0.0, 1.0);
 
-    for (int i = 0; i < i0recovered; i++) {
+    for (auto i{ 0 }; i < i0recovered; i++) {
         new_subject(14, -1, 0, false, (dis(my_gen) < percentage));
     }
 
     std::uniform_int_distribution<> i_dis(1, max_transmission_day);
-    
-    for (int i = 0; i < i0active; i++) {
+
+    for (auto i{ 0 }; i < i0active; i++) {
         new_subject(i_dis(my_gen), -1, 0, true, (dis(my_gen) < percentage));
     }
 
@@ -36,29 +31,27 @@ Population::seed_infected(
 }
 
 void
-Population::seed_infected(
-    const std::vector<int>& i0active, 
-    const std::vector<int>& i0recovered, 
-    const double percentage,
-    const int max_transmission_day)
+Population::seed_infected(const std::vector<int>& i0active,
+                          const std::vector<int>& i0recovered,
+                          const double percentage,
+                          const int max_transmission_day)
 {
     std::uniform_real_distribution<> dis(0.0, 1.0);
 
-    for (auto &n : i0recovered) {
+    for (auto& n : i0recovered) {
         for (int i = 0; i < n; i++) {
             seed_subject(false, (dis(my_gen) < percentage));
         }
     }
 
     std::uniform_int_distribution<> i_dis(1, max_transmission_day);
-    // new_subject(const int day, const int parent, const int cDay, const bool
-    // active, const bool quarantine)
+
     for (auto& n : i0active) {
         for (int i = 0; i < n; i++) {
             new_subject(i_dis(my_gen), -1, 0, true, (dis(my_gen) < percentage));
         }
     }
-    
+
     this->first_ind = i0recovered.size();
 
     return;

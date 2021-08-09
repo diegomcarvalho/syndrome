@@ -2,8 +2,9 @@
 #define STATISTICS_HPP
 
 #include <cmath>
-#include <iostream>
 #include <vector>
+#define NDEBUG
+#include <cassert>
 
 template<typename T>
 class Statistics
@@ -17,7 +18,7 @@ class Statistics
     Statistics(const int n, T val)
       : sz(n)
     {
-        for (unsigned int i = 0; i < sz; i++) {
+        for (auto i{ 0u }; i < sz; i++) {
             mean.push_back(val);
             m2.push_back(val);
             count.push_back(val);
@@ -25,17 +26,14 @@ class Statistics
         return;
     }
 
-    int size() { return sz; }
+    const int size() { return sz; }
     std::vector<T> get_mean() { return mean; }
     std::vector<T> get_m2() { return m2; }
     std::vector<T> get_count() { return count; }
 
     void add_value(const unsigned int id, const T value)
     {
-        if (id >= sz)
-            std::cerr << "Error in " << __FILE__ << " at line " << __LINE__
-                      << "|-> Statistics add_value(" << id << "," << value
-                      << ");" << std::endl;
+        assert(id < sz);
 
         T delta = value - mean[id];
         count[id] += 1.0;

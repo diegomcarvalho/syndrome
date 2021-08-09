@@ -4,10 +4,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <future> // std::async, std::future
 #include <iostream>
 #include <memory>
 #include <random>
-#include <future>         // std::async, std::future
+
+#include <thread>
 
 #include "population.hpp"
 #include "statistics.hpp"
@@ -17,7 +19,7 @@ std::mt19937_64 my_gen; // Standard mersenne_twister_engine seeded with rd()
 inline int
 powerlaw(double gamma, double ran)
 {
-    return int((pow(ran, (-1.0 / gamma))) - 0.5);
+    return static_cast<int>((pow(ran, (-1.0 / gamma))) - 0.5);
 }
 
 inline int
@@ -61,66 +63,62 @@ vaccinate(const int individuals,
 
 std::vector<std::vector<double>>
 calculate_infection_sample(const int duration,
-                    const int susceptible_max_size,
-                    const int i0active,
-                    const int i0recovered,
-                    const int max_transmission_day,
-                    const int max_in_quarantine,
-                    const double gamma,
-                    const double percentage_in_quarantine,
-                    std::uniform_real_distribution<> dis,
-                    std::uniform_int_distribution<> i_dis
-                    )
+                           const int susceptible_max_size,
+                           const int i0active,
+                           const int i0recovered,
+                           const int max_transmission_day,
+                           const int max_in_quarantine,
+                           const double gamma,
+                           const double percentage_in_quarantine,
+                           std::uniform_real_distribution<> dis,
+                           std::uniform_int_distribution<> i_dis)
 {
-    int S, I;
+    int S{ susceptible_max_size - i0active - i0recovered };
+    int I{ 0 };
 
-    Population population(susceptible_max_size + i0active + i0recovered);
+    Population population(S);
 
     Statistics<double> infected_stat(duration, 0.0);
     Statistics<double> susceptible_stat(duration, 0.0);
     Statistics<double> r_0_stat(duration, 0.0);
 
-    population.seed_infected(i0active,
-                                i0recovered,
-                                percentage_in_quarantine,
-                                max_transmission_day);
-    S = susceptible_max_size - i0active - i0recovered;
+    population.seed_infected(
+      i0active, i0recovered, percentage_in_quarantine, max_transmission_day);
 
     for (int day = 0; day < duration; day++) {
         I = population.size();
 
-        infected_stat.add_value(day, double(I));
-        susceptible_stat.add_value(day, double(S));
+        infected_stat.add_value(day, static_cast<double>(I));
+        susceptible_stat.add_value(day, static_cast<double>(S));
 
-        for (int ind = population.first_subject(); ind < I; ind++) {
+        for (auto ind{ population.first_subject() }; ind < I; ind++) {
             auto& person = population[ind];
 
             if (person.is_active()) {
                 if (person.days_of_infection < max_transmission_day) {
                     person.days_of_infection++;
-                    int available_new_infected =
-                        powerlaw(gamma, dis(my_gen));
+                    auto available_new_infected{ powerlaw(gamma, dis(my_gen)) };
 
                     if (!available_new_infected)
                         continue;
 
                     if (person.is_quarantined())
                         available_new_infected =
-                            std::min(max_in_quarantine - person.decendants,
-                                    available_new_infected);
+                          std::min(max_in_quarantine - person.decendants,
+                                   available_new_infected);
 
-                    int new_infected = 0;
-                    for (int ni = 0; ni < available_new_infected; ni++) {
+                    auto new_infected{ 0 };
+                    for (auto ni{ 0 }; ni < available_new_infected; ni++) {
                         // Check if the individual belongs to S, and
                         if ((i_dis(my_gen) < S) && (S > 0)) {
                             new_infected++;
                             S--;
                             population.new_subject(
-                                0,
-                                ind,
-                                day,
-                                true,
-                                (dis(my_gen) < percentage_in_quarantine));
+                              0,
+                              ind,
+                              day,
+                              true,
+                              (dis(my_gen) < percentage_in_quarantine));
                         }
                     }
                     person.decendants += new_infected;
@@ -131,10 +129,12 @@ calculate_infection_sample(const int duration,
                 }
             }
         }
-        int kp = 0, dp = 0;
-        for (unsigned int ui = 0; ui < population.size(); ui++) {
-            // for (auto person : population)
-            auto& person = population[ui];
+
+        // /* auto& person = population[ui]; */
+        // for (auto ui{ 0u }; ui < population.size(); ui++) {
+
+        int kp{ 0 }, dp{ 0 };
+        for (auto& person : population) {
             if ((person.parent == -1) ||
                 (person.days_of_infection < max_transmission_day))
                 continue;
@@ -144,7 +144,6 @@ calculate_infection_sample(const int duration,
         if (kp)
             r_0_stat.add_value(day, double(dp) / double(kp));
     }
-    population.reset_population();
 
     std::vector<std::vector<double>> res;
 
@@ -165,19 +164,20 @@ calculate_infection_sample(const int duration,
 
 std::vector<std::vector<double>>
 calculate_infection_with_vaccine_sample(const int duration,
-                                 const int susceptible_max_size,
-                                 const int i0active,
-                                 const int i0recovered,
-                                 const int max_transmission_day,
-                                 const int max_in_quarantine,
-                                 const double gamma,
-                                 const double percentage_in_quarantine,
-                                 const double vaccinated_share,
-                                 const double vaccine_efficacy,
-                                 std::uniform_real_distribution<> dis,
-                                 std::uniform_int_distribution<> i_dis)
+                                        const int susceptible_max_size,
+                                        const int i0active,
+                                        const int i0recovered,
+                                        const int max_transmission_day,
+                                        const int max_in_quarantine,
+                                        const double gamma,
+                                        const double percentage_in_quarantine,
+                                        const double vaccinated_share,
+                                        const double vaccine_efficacy,
+                                        std::uniform_real_distribution<> dis,
+                                        std::uniform_int_distribution<> i_dis)
 {
-    int S, I;
+    int S{ susceptible_max_size - i0active - i0recovered };
+    int I{ 0 };
 
     Population population(susceptible_max_size + i0active + i0recovered);
 
@@ -185,50 +185,45 @@ calculate_infection_with_vaccine_sample(const int duration,
     Statistics<double> susceptible_stat(duration, 0.0);
     Statistics<double> r_0_stat(duration, 0.0);
 
-    population.seed_infected(i0active,
-                                i0recovered,
-                                percentage_in_quarantine,
-                                max_transmission_day);
-    S = susceptible_max_size - i0active - i0recovered;
+    population.seed_infected(
+      i0active, i0recovered, percentage_in_quarantine, max_transmission_day);
 
-    for (int day = 0; day < duration; day++) {
+    for (auto day{ 0 }; day < duration; day++) {
         I = population.size();
 
         infected_stat.add_value(day, double(I));
         susceptible_stat.add_value(day, double(S));
 
-        for (int ind = population.first_subject(); ind < I; ind++) {
+        for (auto ind{ population.first_subject() }; ind < I; ind++) {
             auto& person = population[ind];
 
             if (person.is_active()) {
                 if (person.days_of_infection < max_transmission_day) {
                     person.days_of_infection++;
-                    int available_new_infected =
-                        powerlaw(gamma, dis(my_gen));
-                    available_new_infected -=
-                        vaccinate(available_new_infected,
-                                vaccinated_share,
-                                vaccine_efficacy);
+                    int available_new_infected{ powerlaw(gamma, dis(my_gen)) };
+                    available_new_infected -= vaccinate(available_new_infected,
+                                                        vaccinated_share,
+                                                        vaccine_efficacy);
                     if (!available_new_infected)
                         continue;
 
                     if (person.is_quarantined())
                         available_new_infected =
-                            std::min(max_in_quarantine - person.decendants,
-                                    available_new_infected);
+                          std::min(max_in_quarantine - person.decendants,
+                                   available_new_infected);
 
-                    int new_infected = 0;
-                    for (int ni = 0; ni < available_new_infected; ni++) {
+                    auto new_infected{ 0 };
+                    for (auto ni{ 0 }; ni < available_new_infected; ni++) {
                         // Check if the individual belongs to S, and
                         if ((i_dis(my_gen) < S) && (S > 0)) {
                             new_infected++;
                             S--;
                             population.new_subject(
-                                0,
-                                ind,
-                                day,
-                                true,
-                                (dis(my_gen) < percentage_in_quarantine));
+                              0,
+                              ind,
+                              day,
+                              true,
+                              (dis(my_gen) < percentage_in_quarantine));
                         }
                     }
                     person.decendants += new_infected;
@@ -239,10 +234,8 @@ calculate_infection_with_vaccine_sample(const int duration,
                 }
             }
         }
-        int kp = 0, dp = 0;
-        for (unsigned int ui = 0; ui < population.size(); ui++) {
-            // for (auto person : population)
-            auto& person = population[ui];
+        int kp{ 0 }, dp{ 0 };
+        for (auto& person : population) {
             if ((person.parent == -1) ||
                 (person.days_of_infection < max_transmission_day))
                 continue;
@@ -252,7 +245,6 @@ calculate_infection_with_vaccine_sample(const int duration,
         if (kp)
             r_0_stat.add_value(day, double(dp) / double(kp));
     }
-    population.reset_population();
 
     std::vector<std::vector<double>> res;
 
@@ -283,33 +275,34 @@ calculate_infection(const int duration,
                     const double percentage_in_quarantine)
 {
     std::uniform_real_distribution<> dis(0.0, 1.0);
-    std::uniform_int_distribution<> i_dis(0, susceptible_max_size + i0active + i0recovered);
+    std::uniform_int_distribution<> i_dis(
+      0, susceptible_max_size + i0active + i0recovered);
 
     Statistics<double> infected_stat(duration, 0.0);
     Statistics<double> susceptible_stat(duration, 0.0);
     Statistics<double> r_0_stat(duration, 0.0);
 
-    int div = 3;
+    const auto div{ std::thread::hardware_concurrency() };
 
-    for (int k = 0; k < samples/div; k++) {
+    for (auto k{ 0 }; k < samples / div; k++) {
         std::vector<std::future<std::vector<std::vector<double>>>> fut;
 
         for (int i = 0; i < div; i++)
             fut.push_back(std::async(calculate_infection_sample,
-                                                 duration,
-                                                 susceptible_max_size,
-                                                 i0active,
-                                                 i0recovered,
-                                                 max_transmission_day,
-                                                 max_in_quarantine,
-                                                 gamma,
-                                                 percentage_in_quarantine,
-                                                 dis,
-                                                 i_dis));
+                                     duration,
+                                     susceptible_max_size,
+                                     i0active,
+                                     i0recovered,
+                                     max_transmission_day,
+                                     max_in_quarantine,
+                                     gamma,
+                                     percentage_in_quarantine,
+                                     dis,
+                                     i_dis));
 
-        for (auto & it : fut) {
+        for (auto& it : fut) {
             auto ret = it.get();
-            for (int d = 0; d < duration; d++) {
+            for (auto d{ 0 }; d < duration; d++) {
                 infected_stat.add_value(d, ret[0][d]);
                 susceptible_stat.add_value(d, ret[3][d]);
                 r_0_stat.add_value(d, ret[6][d]);
@@ -348,35 +341,36 @@ calculate_infection_with_vaccine(const int duration,
                                  const double vaccine_efficacy)
 {
     std::uniform_real_distribution<> dis(0.0, 1.0);
-    std::uniform_int_distribution<> i_dis(0, susceptible_max_size + i0active + i0recovered);
+    std::uniform_int_distribution<> i_dis(
+      0, susceptible_max_size + i0active + i0recovered);
 
     Statistics<double> infected_stat(duration, 0.0);
     Statistics<double> susceptible_stat(duration, 0.0);
     Statistics<double> r_0_stat(duration, 0.0);
 
-    int div = 3;
+    const auto div{ std::thread::hardware_concurrency() };
 
-    for (int k = 0; k < samples/div; k++) {
+    for (int k = 0; k < samples / div; k++) {
         std::vector<std::future<std::vector<std::vector<double>>>> fut;
 
-        for (int i = 0; i < div; i++)
+        for (auto i{ 0 }; i < div; i++)
             fut.push_back(std::async(calculate_infection_with_vaccine_sample,
-                                                 duration,
-                                                 susceptible_max_size,
-                                                 i0active,
-                                                 i0recovered,
-                                                 max_transmission_day,
-                                                 max_in_quarantine,
-                                                 gamma,
-                                                 percentage_in_quarantine,
-                                                 vaccinated_share,
-                                                 vaccine_efficacy,
-                                                 dis,
-                                                 i_dis));
+                                     duration,
+                                     susceptible_max_size,
+                                     i0active,
+                                     i0recovered,
+                                     max_transmission_day,
+                                     max_in_quarantine,
+                                     gamma,
+                                     percentage_in_quarantine,
+                                     vaccinated_share,
+                                     vaccine_efficacy,
+                                     dis,
+                                     i_dis));
 
-        for (auto & it : fut) {
+        for (auto& it : fut) {
             auto ret = it.get();
-            for (int d = 0; d < duration; d++) {
+            for (auto d{ 0 }; d < duration; d++) {
                 infected_stat.add_value(d, ret[0][d]);
                 susceptible_stat.add_value(d, ret[3][d]);
                 r_0_stat.add_value(d, ret[6][d]);
