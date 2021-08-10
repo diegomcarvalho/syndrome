@@ -13,13 +13,13 @@ Population::seed_infected(const int i0active,
                           const double percentage,
                           const int max_transmission_day)
 {
-    real_uniform dis(0.0, 1.0);
+    real_uniform_t dis(0.0, 1.0);
 
     for (auto i{ 0 }; i < i0recovered; i++) {
         new_subject(14, -1, 0, false, (dis(my_gen) < percentage));
     }
 
-    integer_uniform i_dis(1, max_transmission_day);
+    integer_uniform_t i_dis(1, max_transmission_day);
 
     for (auto i{ 0 }; i < i0active; i++) {
         new_subject(i_dis(my_gen), -1, 0, true, (dis(my_gen) < percentage));
@@ -36,7 +36,7 @@ Population::seed_infected(const std::vector<int>& i0active,
                           const double percentage,
                           const int max_transmission_day)
 {
-    real_uniform dis(0.0, 1.0);
+    real_uniform_t dis(0.0, 1.0);
 
     for (auto& n : i0recovered) {
         for (int i = 0; i < n; i++) {
@@ -44,7 +44,7 @@ Population::seed_infected(const std::vector<int>& i0active,
         }
     }
 
-    integer_uniform i_dis(1, max_transmission_day);
+    integer_uniform_t i_dis(1, max_transmission_day);
 
     for (auto& n : i0active) {
         for (int i = 0; i < n; i++) {

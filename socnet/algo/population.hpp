@@ -7,8 +7,8 @@
 constexpr uint8_t fACTIVE = 0x01;
 constexpr uint8_t fQUARANTINE = 0x01 << 1;
 
-using real_uniform = std::uniform_real_distribution<>;
-using integer_uniform = std::uniform_int_distribution<>;
+using real_uniform_t = std::uniform_real_distribution<>;
+using integer_uniform_t = std::uniform_int_distribution<>;
 
 class Subject
 {
