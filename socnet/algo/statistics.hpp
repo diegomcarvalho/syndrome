@@ -1,5 +1,4 @@
-#ifndef STATISTICS_HPP
-#define STATISTICS_HPP
+#pragma once
 
 #include <cmath>
 #include <vector>
@@ -44,4 +43,3 @@ class Statistics
         return;
     }
 };
-#endif // STATISTICS_HPP

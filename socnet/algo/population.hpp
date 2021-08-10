@@ -1,5 +1,4 @@
-#ifndef POPULATION_HPP
-#define POPULATION_HPP
+#pragma once
 
 #include <memory>
 #include <random>
@@ -41,22 +40,20 @@ class Subject
             const int c = 0,
             const bool a = false,
             const bool q = false)
-      : days_of_infection(doi)
+      : flags(uint8_t(a) | (uint8_t(q) << 1))
+      , days_of_infection(doi)
       , parent(p)
       , contamination_day(c)
       , decendants(0)
-    {
-        this->flags = uint8_t(a) | (uint8_t(q) << 1);
-    }
+    {}
 
     Subject(const bool a, const bool q)
-      : days_of_infection(0)
+      : flags(uint8_t(a) | (uint8_t(q) << 1))
+      , days_of_infection(0)
       , parent(-1)
       , contamination_day(0)
       , decendants(0)
-    {
-        this->flags = uint8_t(a) | (uint8_t(q) << 1);
-    }
+    {}
 };
 
 class Population
@@ -112,5 +109,3 @@ class Population
 
     void move_first(const int id) { first_ind = id; }
 };
-
-#endif // POPULATION_HPP
