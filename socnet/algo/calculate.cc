@@ -124,8 +124,8 @@ calculate_infection_sample(const int duration,
                     person.decendants += new_infected;
                 } else {
                     person.clear_active();
-                    if (population.first_subject() == (ind - 1))
-                        population.move_first(ind);
+                    if (population.first_subject() == ind)
+                        population.move_first(ind + 1);
                 }
             }
         }
@@ -229,8 +229,8 @@ calculate_infection_with_vaccine_sample(const int duration,
                     person.decendants += new_infected;
                 } else {
                     person.clear_active();
-                    if (population.first_subject() == (ind - 1))
-                        population.move_first(ind);
+                    if (population.first_subject() == ind)
+                        population.move_first(ind + 1);
                 }
             }
         }
