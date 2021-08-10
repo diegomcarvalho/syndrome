@@ -53,7 +53,7 @@ vaccinate(const int individuals,
     int immune_individuals = 0;
     double real_efficacy = vaccinated_percentage * vaccine_efficacy;
 
-    real_uniform dis(0.0, 1.0);
+    real_uniform_t dis(0.0, 1.0);
 
     for (auto i = 0; i < individuals; i++) {
         immune_individuals += (dis(my_gen) < real_efficacy);
@@ -70,8 +70,8 @@ calculate_infection_sample(const int duration,
                            const int max_in_quarantine,
                            const double gamma,
                            const double percentage_in_quarantine,
-                           real_uniform dis,
-                           integer_uniform i_dis)
+                           real_uniform_t dis,
+                           integer_uniform_t i_dis)
 {
     int S{ susceptible_max_size - i0active - i0recovered };
     int I{ 0 };
@@ -173,8 +173,8 @@ calculate_infection_with_vaccine_sample(const int duration,
                                         const double percentage_in_quarantine,
                                         const double vaccinated_share,
                                         const double vaccine_efficacy,
-                                        real_uniform dis,
-                                        integer_uniform i_dis)
+                                        real_uniform_t dis,
+                                        integer_uniform_t i_dis)
 {
     int S{ susceptible_max_size - i0active - i0recovered };
     int I{ 0 };
@@ -274,8 +274,8 @@ calculate_infection(const int duration,
                     const double gamma,
                     const double percentage_in_quarantine)
 {
-    real_uniform dis(0.0, 1.0);
-    integer_uniform i_dis(0, susceptible_max_size + i0active + i0recovered);
+    real_uniform_t dis(0.0, 1.0);
+    integer_uniform_t i_dis(0, susceptible_max_size + i0active + i0recovered);
 
     Statistics<double> infected_stat(duration, 0.0);
     Statistics<double> susceptible_stat(duration, 0.0);
@@ -339,8 +339,8 @@ calculate_infection_with_vaccine(const int duration,
                                  const double vaccinated_share,
                                  const double vaccine_efficacy)
 {
-    real_uniform dis(0.0, 1.0);
-    integer_uniform i_dis(0, susceptible_max_size + i0active + i0recovered);
+    real_uniform_t dis(0.0, 1.0);
+    integer_uniform_t i_dis(0, susceptible_max_size + i0active + i0recovered);
 
     Statistics<double> infected_stat(duration, 0.0);
     Statistics<double> susceptible_stat(duration, 0.0);
